@@ -1,6 +1,12 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+from ingest import ingest_pdf
+from chat import answer_question
+import os
 
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -19,17 +25,17 @@ def root():
     return {"message": "Backend is running"}
 
 @app.post("/chat")
-def chat(question:str):
-    return {"response": f"This is a mock answer to {question}"}
+async def chat(question:str):
+    response = await answer_question(question)
+    return {"response": response}
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     contents = await file.read()
-    return{
+    chunk_count = await ingest_pdf(contents, file.filename)
+    return {
         "filename": file.filename,
-        "size" : len(contents),
-        "message" : f"File {file.filename} contents recieved succesfully!"
-
+        "message": f"Successfully processed {chunk_count} chunks"
     }
 
 

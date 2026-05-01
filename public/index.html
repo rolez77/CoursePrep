@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CoursePrep — Coming Soon</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #F5F0E8;
+    --ink: #1A1612;
+    --accent: #C8441A;
+    --muted: #8C8070;
+    --border: rgba(26,22,18,0.12);
+  }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0.4;
+  }
+
+  nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 28px 48px;
+    border-bottom: 1px solid var(--border);
+    animation: fadeDown 0.8s ease both;
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .nav-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 300;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 100px;
+  }
+
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 48px;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+    animation: fadeUp 0.8s 0.2s ease both;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(52px, 8vw, 96px);
+    font-weight: 700;
+    line-height: 1.0;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin-bottom: 32px;
+    animation: fadeUp 0.8s 0.35s ease both;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 18px;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 520px;
+    margin-bottom: 56px;
+    animation: fadeUp 0.8s 0.5s ease both;
+  }
+
+  .form-wrap {
+    display: flex;
+    gap: 0;
+    max-width: 480px;
+    border: 1.5px solid var(--ink);
+    border-radius: 4px;
+    overflow: hidden;
+    animation: fadeUp 0.8s 0.65s ease both;
+    transition: box-shadow 0.3s;
+  }
+
+  .form-wrap:focus-within {
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  .form-wrap input {
+    flex: 1;
+    padding: 16px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 300;
+    color: var(--ink);
+    background: transparent;
+    border: none;
+    outline: none;
+  }
+
+  .form-wrap input::placeholder { color: var(--muted); }
+
+  .form-wrap button {
+    padding: 16px 24px;
+    background: var(--ink);
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+
+  .form-wrap button:hover { background: var(--accent); }
+
+  .form-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 12px;
+    font-weight: 300;
+    animation: fadeUp 0.8s 0.75s ease both;
+  }
+
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+    margin: 64px 0 40px;
+    animation: fadeUp 0.8s 0.8s ease both;
+  }
+
+  .features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    animation: fadeUp 0.8s 0.9s ease both;
+  }
+
+  .feature-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 10px;
+    letter-spacing: 0.1em;
+  }
+
+  .feature-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+
+  .feature-desc {
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  footer {
+    padding: 24px 48px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: fadeUp 0.8s 1s ease both;
+  }
+
+  .footer-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 300;
+    letter-spacing: 0.05em;
+  }
+
+  .success-msg {
+    display: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    margin-top: 12px;
+    letter-spacing: 0.05em;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 600px) {
+    nav, main, footer { padding-left: 24px; padding-right: 24px; }
+    .features { grid-template-columns: 1fr; gap: 24px; }
+    .form-wrap { flex-direction: column; }
+    .form-wrap button { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="logo">Course<span>Prep</span></a>
+  <span class="nav-tag">Coming Soon</span>
+</nav>
+
+<main>
+  <div class="eyebrow">AI-powered study tool</div>
+  <h1>Study smarter.<br/><em>Ace every exam.</em></h1>
+  <p class="subtitle">Upload your syllabus, lecture notes, and past exams. CoursePrep becomes a tutor that knows your course inside out.</p>
+
+  <div class="divider"></div>
+
+  <div class="features">
+    <div>
+      <div class="feature-num">01</div>
+      <div class="feature-title">Course-specific tutoring</div>
+      <div class="feature-desc">Trained on your exact syllabus, not generic textbooks.</div>
+    </div>
+    <div>
+      <div class="feature-num">02</div>
+      <div class="feature-title">Professor-style quizzes</div>
+      <div class="feature-desc">Practice with questions that mirror your professor's exam style.</div>
+    </div>
+    <div>
+      <div class="feature-num">03</div>
+      <div class="feature-title">Smart spaced repetition</div>
+      <div class="feature-desc">Surfaces your weak topics automatically before exam day.</div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span class="footer-text">© 2026 CoursePrep</span>
+  <span class="footer-text">courseprep.xyz</span>
+</footer>
+
+<script>
+function handleSubmit() {
+  const email = document.getElementById('email-input').value;
+  if (!email || !email.includes('@')) return;
+  document.querySelector('.form-wrap').style.display = 'none';
+  document.querySelector('.form-note').style.display = 'none';
+  document.getElementById('success-msg').style.display = 'block';
+}
+</script>
+
+</body>
+</html>
