@@ -20,13 +20,14 @@ embeddings = OpenAIEmbeddings(
 
 claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
-async def answer_question(question: str):
+async def answer_question(question: str, user_id: str):
 
     question_embedding = embeddings.embed_query(question)
 
     result = supabase.rpc("match_documents",{
         "query_embedding": question_embedding,
-        "match_count": 5
+        "match_count": 5,
+        "user_id": user_id
     }).execute()
 
     chunks = result.data
