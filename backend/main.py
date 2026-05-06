@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from ingest import ingest_pdf
 from chat import answer_question
+from quiz import generate_quiz
 import os
 
 
@@ -37,6 +38,11 @@ async def upload_file(file: UploadFile = File(...), user_id: str = Form(...)):
         "filename": file.filename,
         "message": f"Successfully processed {chunk_count} chunks"
     }
+
+@app.post("/quiz")
+async def quiz_endpoint(topic: str, user_id: str, num_questions: int = 5):
+    quiz = await generate_quiz(topic, user_id, num_questions)
+    return {"quiz": quiz}
 
 
 
