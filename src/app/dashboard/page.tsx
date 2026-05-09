@@ -3,8 +3,8 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/app/lib/supabase"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
+import Navbar from "@/app/components/Navbar"
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null)
@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({})
   const [submitted, setSubmitted] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   useEffect(() => {
@@ -31,9 +32,11 @@ export default function Dashboard() {
     getUser()
   }, [])
 
-  function goToProfile() {
-    router.push("/profile")
-  }
+  useEffect(() => {
+    if (searchParams.get("upgraded") === "true") {
+      setUploadStatus("🎉 Welcome to Pro! All features unlocked.")
+    }
+  }, [])
 
   async function handleUpload() {
     if (!file || !user) return
@@ -105,22 +108,7 @@ function getScore() {
   return (
     <main style={{ background: "#F5F0E8", minHeight: "100vh", display: "flex", flexDirection: "column", fontFamily: "'DM Sans', sans-serif" }}>
       {/* Nav */}
-      <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 48px", borderBottom: "1px solid rgba(26,22,18,0.12)" }}>
-        <Link href="/dashboard" style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px", fontWeight: 700, color: "#1A1612", textDecoration: "none" }}>
-          Course<span style={{ color: "#C8441A" }}>Prep</span>
-        </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070" }}>{user.email}</span>
-          <Link href="/courses" style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}>Courses</Link>
-
-          <button
-            onClick={goToProfile}
-            style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", letterSpacing: "0.08em", textTransform: "uppercase", border: "1px solid rgba(26,22,18,0.12)", padding: "6px 14px", borderRadius: "100px", background: "transparent", cursor: "pointer" }}
-          >
-            Profile
-          </button>
-        </div>
-      </nav>
+      <Navbar />
 
       <div style={{ flex: 1, maxWidth: "860px", margin: "0 auto", width: "100%", padding: "48px" }}>
 

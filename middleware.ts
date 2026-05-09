@@ -28,32 +28,40 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Root redirect
-  if (request.nextUrl.pathname === "/") {
-    if (user) return NextResponse.redirect(new URL("/dashboard", request.url))
-    return NextResponse.redirect(new URL("/login", request.url))
+  function redirect(url: string) {
+    const res = NextResponse.redirect(new URL(url, request.url))
+    supabaseResponse.cookies.getAll().forEach(({ name, value }) => res.cookies.set(name, value))
+    return res
   }
 
-  // Protect dashboard — redirect to login if not authenticated
-  if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
-    return NextResponse.redirect(new URL("/login", request.url))
+  // Root redirect
+  if (request.nextUrl.pathname === "/") {
+    return redirect(user ? "/dashboard" : "/login")
   }
-  if (!user && request.nextUrl.pathname.startsWith("/courses")) {
-      return NextResponse.redirect(new URL("/login", request.url))
-    }
+
+  // Protect dashboard and courses — redirect to login if not authenticated
+  if (!user && (
+    request.nextUrl.pathname.startsWith("/dashboard") ||
+    request.nextUrl.pathname.startsWith("/courses")
+  )) {
+    return redirect("/login")
+  }
+
+  if (!user && request.nextUrl.pathname.startsWith("/upgrade")) {
+    return redirect("/login")
+  }
 
   // Redirect logged in users away from login/signup
   if (user && (
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/signup")
   )) {
-    return NextResponse.redirect(new URL("/dashboard", request.url))
+    return redirect("/dashboard")
   }
 
   return supabaseResponse
 }
 
 export const config = {
-  matcher: ["/", "/dashboard/:path*", "/login", "/signup", "/profile", "/courses"],
-
+  matcher: ["/", "/dashboard/:path*", "/login", "/signup", "/profile", "/courses", "/search", "/upgrade"],
 }

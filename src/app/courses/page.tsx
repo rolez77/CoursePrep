@@ -4,13 +4,14 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/app/lib/supabase"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
+import Navbar from "@/app/components/Navbar"
 
 interface Course {
   id: number
   name: string
   description: string
   created_at: string
+  is_public: boolean
 }
 
 export default function Courses() {
@@ -18,8 +19,10 @@ export default function Courses() {
   const [courses, setCourses] = useState<Course[]>([])
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
+  const [university, setUniversity] = useState("")
   const [creating, setCreating] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [toggleError, setToggleError] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -48,11 +51,12 @@ export default function Courses() {
 
     const { error } = await supabase
       .from("courses")
-      .insert({ name, description, user_id: user.id })
+      .insert({ name, description, university: university || null, user_id: user.id })
 
     if (!error) {
       setName("")
       setDescription("")
+      setUniversity("")
       setShowForm(false)
       fetchCourses(user.id)
     }
@@ -64,26 +68,11 @@ export default function Courses() {
     fetchCourses(user.id)
   }
 
-  async function handleSignOut() {
-    await supabase.auth.signOut()
-    router.push("/login")
-  }
-
   if (!user) return null
 
   return (
     <main style={{ background: "#F5F0E8", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Nav */}
-      <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 48px", borderBottom: "1px solid rgba(26,22,18,0.12)" }}>
-        <Link href="/" style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px", fontWeight: 700, color: "#1A1612", textDecoration: "none" }}>
-          Course<span style={{ color: "#C8441A" }}>Prep</span>
-        </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <Link href="/dashboard" style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}>Dashboard</Link>
-          <Link href="/profile" style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none", border: "1px solid rgba(26,22,18,0.12)", padding: "6px 14px", borderRadius: "100px" }}>Profile</Link>
-          <button onClick={handleSignOut} style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", letterSpacing: "0.08em", textTransform: "uppercase", border: "1px solid rgba(26,22,18,0.12)", padding: "6px 14px", borderRadius: "100px", background: "transparent", cursor: "pointer" }}>Sign out</button>
-        </div>
-      </nav>
+      <Navbar />
 
       <div style={{ flex: 1, maxWidth: "860px", margin: "0 auto", width: "100%", padding: "48px" }}>
 
@@ -133,6 +122,16 @@ export default function Courses() {
                   style={{ width: "100%", padding: "14px 18px", fontFamily: "'DM Sans', sans-serif", fontSize: "14px", background: "transparent", border: "1.5px solid rgba(26,22,18,0.3)", borderRadius: "4px", outline: "none", color: "#1A1612", boxSizing: "border-box" }}
                 />
               </div>
+              <div>
+                <label style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>University (optional)</label>
+                <input
+                  type="text"
+                  value={university}
+                  onChange={(e) => setUniversity(e.target.value)}
+                  placeholder="e.g. University of Florida"
+                  style={{ width: "100%", padding: "14px 18px", fontFamily: "'DM Sans', sans-serif", fontSize: "14px", background: "transparent", border: "1.5px solid rgba(26,22,18,0.3)", borderRadius: "4px", outline: "none", color: "#1A1612", boxSizing: "border-box" }}
+                />
+              </div>
             </div>
             <div style={{ padding: "20px 28px", borderTop: "1px solid rgba(26,22,18,0.12)", display: "flex", justifyContent: "flex-end" }}>
               <button
@@ -144,6 +143,12 @@ export default function Courses() {
               </button>
             </div>
           </div>
+        )}
+
+        {toggleError && (
+          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "12px", color: "#C8441A", marginBottom: "16px", letterSpacing: "0.04em" }}>
+            Error: {toggleError}
+          </p>
         )}
 
         {/* Course list */}
@@ -175,6 +180,17 @@ export default function Courses() {
                   style={{ padding: "10px 18px", background: "#1A1612", color: "#F5F0E8", fontFamily: "'DM Mono', monospace", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", border: "none", borderRadius: "4px", cursor: "pointer" }}
                 >
                   Open
+                </button>
+                <button
+                    onClick={async () => {
+                        setToggleError(null)
+                        const { error } = await supabase.from("courses").update({ is_public: !course.is_public }).eq("id", course.id)
+                        if (error) { setToggleError(error.message); return }
+                        fetchCourses(user.id)
+                    }}
+                    style={{ padding: "10px 18px", background: "transparent", color: course.is_public ? "#0F6E56" : "#8C8070", fontFamily: "'DM Mono', monospace", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", border: `1px solid ${course.is_public ? "rgba(15,110,86,0.3)" : "rgba(26,22,18,0.2)"}`, borderRadius: "4px", cursor: "pointer" }}
+                    >
+                    {course.is_public ? "✓ Public" : "Make public"}
                 </button>
                 <button
                   onClick={() => handleDeleteCourse(course.id)}
