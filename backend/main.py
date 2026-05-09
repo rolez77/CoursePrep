@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form, Request
+from fastapi import FastAPI, UploadFile, File, Form, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from ingest import ingest_pdf
@@ -40,8 +40,26 @@ def root():
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...), user_id: str = Form(...), course_id: str = Form(None)):
+    
+
+    profile = supabase.table("profiles").select("is_pro, upload_count").eq("id", user_id).single().execute()
+    
+    if not profile.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    is_pro = profile.data.get("is_pro", False)
+    upload_count = profile.data.get("upload_count", 0)
+
+    if not is_pro and upload_count >= 1:
+        raise HTTPException(status_code=403, detail="Free plan limit reached. Upgrade to Pro for unlimited uploads.")
+
     contents = await file.read()
     chunk_count = await ingest_pdf(contents, file.filename, user_id, course_id)
+
+    supabase.table("profiles").update(
+        {"upload_count": upload_count + 1}
+    ).eq("id", user_id).execute()
+
     return {
         "filename": file.filename,
         "message": f"Successfully processed {chunk_count} chunks"

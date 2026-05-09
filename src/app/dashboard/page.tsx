@@ -4,12 +4,14 @@ import { useEffect, useState, Suspense } from "react"
 import { createClient } from "@/app/lib/supabase"
 import { useRouter, useSearchParams } from "next/navigation"
 import Navbar from "@/app/components/Navbar"
+import Link from "next/link"
 
 function DashboardContent() {
   const [user, setUser] = useState<any>(null)
   const [file, setFile] = useState<File | null>(null)
   const [uploadStatus, setUploadStatus] = useState("")
   const [uploading, setUploading] = useState(false)
+  const [limitReached, setLimitReached] = useState(false)
   const [question, setQuestion] = useState("")
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([])
   const [loading, setLoading] = useState(false)
@@ -40,12 +42,21 @@ function DashboardContent() {
   async function handleUpload() {
     if (!file || !user) return
     setUploading(true)
+    setLimitReached(false)
     const formData = new FormData()
     formData.append("file", file)
     formData.append("user_id", user.id)
+
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, { method: "POST", body: formData })
       const data = await res.json()
+
+      if (res.status === 403) {
+        setLimitReached(true)
+        setUploadStatus("Free plan limit reached — upgrade to Pro for unlimited uploads.")
+        return
+      }
+
       setUploadStatus(data.message)
     } catch {
       setUploadStatus("Upload failed — is the backend running?")
@@ -133,7 +144,14 @@ function DashboardContent() {
             </button>
           </div>
           {uploadStatus && (
-            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "12px", color: "#C8441A", marginTop: "12px", letterSpacing: "0.05em" }}>✓ {uploadStatus}</p>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "12px", color: limitReached ? "#C8441A" : "#0F6E56", marginTop: "12px", letterSpacing: "0.05em" }}>
+              {limitReached ? "⚠️" : "✓"} {uploadStatus}
+            </p>
+          )}
+          {limitReached && (
+            <Link href="/upgrade" style={{ fontFamily: "'DM Mono', monospace", fontSize: "12px", color: "#C8441A", display: "inline-block", marginTop: "8px", letterSpacing: "0.05em", textDecoration: "underline" }}>
+              Upgrade to Pro →
+            </Link>
           )}
         </div>
 
