@@ -38,7 +38,7 @@ export default function PublicCourse() {
 
       // Fetch or generate summary
       try {
-        const res = await fetch(`http://localhost:8000/courses/${id}/summary`)
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/${id}/summary`)
         const data = await res.json()
         setSummary(data.summary)
       } catch {
@@ -60,7 +60,7 @@ export default function PublicCourse() {
     try {
       const userId = user?.id || "anonymous"
       const res = await fetch(
-        `http://localhost:8000/chat?question=${encodeURIComponent(userMessage)}&user_id=${userId}&course_id=${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/chat?question=${encodeURIComponent(userMessage)}&user_id=${userId}&course_id=${id}`,
         { method: "POST" }
       )
       const data = await res.json()

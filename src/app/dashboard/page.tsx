@@ -45,7 +45,7 @@ export default function Dashboard() {
     formData.append("file", file)
     formData.append("user_id", user.id)
     try {
-      const res = await fetch("http://localhost:8000/upload", { method: "POST", body: formData })
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, { method: "POST", body: formData })
       const data = await res.json()
       setUploadStatus(data.message)
     } catch {
@@ -62,7 +62,7 @@ export default function Dashboard() {
     setMessages((prev) => [...prev, { role: "user", content: userMessage }])
     setLoading(true)
     try {
-      const res = await fetch(`http://localhost:8000/chat?question=${encodeURIComponent(userMessage)}&user_id=${user.id}`, { method: "POST" })
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat?question=${encodeURIComponent(userMessage)}&user_id=${user.id}`, { method: "POST" })
       const data = await res.json()
       setMessages((prev) => [...prev, { role: "assistant", content: data.response }])
     } catch {
@@ -81,7 +81,7 @@ export default function Dashboard() {
 
     try {
         const res = await fetch(
-        `http://localhost:8000/quiz?topic=${encodeURIComponent(quizTopic)}&user_id=${user.id}&num_questions=5`,
+        `${process.env.NEXT_PUBLIC_API_URL}/quiz?topic=${encodeURIComponent(quizTopic)}&user_id=${user.id}&num_questions=5`,
         { method: "POST" }
         )
         const data = await res.json()

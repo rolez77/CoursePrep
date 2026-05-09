@@ -24,7 +24,7 @@ export default function Search() {
     setLoading(true)
     setSearched(true)
     try {
-      const res = await fetch(`http://localhost:8000/search?query=${encodeURIComponent(query)}`)
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/search?query=${encodeURIComponent(query)}`)
       const data = await res.json()
       setCourses(data.courses)
     } catch {
