@@ -165,7 +165,7 @@ export default function Courses() {
               key={course.id}
               style={{ border: "1px solid rgba(26,22,18,0.12)", borderRadius: "8px", padding: "24px 28px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(26,22,18,0.02)" }}
             >
-              <div style={{ cursor: "pointer" }} onClick={() => router.push(`/dashboard?course_id=${course.id}`)}>
+              <div style={{ cursor: "pointer" }} onClick={() => router.push(`/courses/${course.id}`)}>
                 <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "18px", color: "#1A1612", margin: "0 0 4px" }}>{course.name}</p>
                 {course.description && (
                   <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "12px", color: "#8C8070", margin: 0, letterSpacing: "0.04em" }}>{course.description}</p>
@@ -176,7 +176,7 @@ export default function Courses() {
               </div>
               <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                 <button
-                  onClick={() => router.push(`/dashboard?course_id=${course.id}`)}
+                  onClick={() => router.push(`/courses/${course.id}`)}
                   style={{ padding: "10px 18px", background: "#1A1612", color: "#F5F0E8", fontFamily: "'DM Mono', monospace", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", border: "none", borderRadius: "4px", cursor: "pointer" }}
                 >
                   Open

@@ -6,285 +6,279 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Navbar from "@/app/components/Navbar"
 import Link from "next/link"
 
+type Profile = {
+  full_name: string | null
+  university: string | null
+  is_pro: boolean
+  upload_count: number
+}
+
+type Course = {
+  id: number
+  name: string
+  description: string | null
+  university: string | null
+  is_public: boolean
+  doc_count: number
+}
+
+type PublicCourse = {
+  id: number
+  name: string
+  description: string | null
+  university: string | null
+}
+
+function getGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return "Good morning"
+  if (h < 17) return "Good afternoon"
+  return "Good evening"
+}
+
 function DashboardContent() {
   const [user, setUser] = useState<any>(null)
-  const [file, setFile] = useState<File | null>(null)
-  const [uploadStatus, setUploadStatus] = useState("")
-  const [uploading, setUploading] = useState(false)
-  const [limitReached, setLimitReached] = useState(false)
-  const [question, setQuestion] = useState("")
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>([])
-  const [loading, setLoading] = useState(false)
-  const [quizTopic, setQuizTopic] = useState("")
-  const [questions, setQuestions] = useState<any[]>([])
-  const [quizLoading, setQuizLoading] = useState(false)
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({})
-  const [submitted, setSubmitted] = useState(false)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [courses, setCourses] = useState<Course[]>([])
+  const [publicCourses, setPublicCourses] = useState<PublicCourse[]>([])
+  const [loading, setLoading] = useState(true)
+  const [upgraded, setUpgraded] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
 
   useEffect(() => {
-    async function getUser() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push("/login"); return }
-      setUser(user)
-    }
-    getUser()
+    if (searchParams.get("upgraded") === "true") setUpgraded(true)
   }, [])
 
   useEffect(() => {
-    if (searchParams.get("upgraded") === "true") {
-      setUploadStatus("🎉 Welcome to Pro! All features unlocked.")
-    }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") router.push("/login")
+    })
+    return () => subscription.unsubscribe()
   }, [])
 
-  async function handleUpload() {
-    if (!file || !user) return
-    setUploading(true)
-    setLimitReached(false)
-    const formData = new FormData()
-    formData.append("file", file)
-    formData.append("user_id", user.id)
+  useEffect(() => {
+    async function load() {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error) { await supabase.auth.signOut(); router.push("/login"); return }
+      if (!user) { router.push("/login"); return }
+      setUser(user)
 
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, { method: "POST", body: formData })
-      const data = await res.json()
+      const [profileRes, coursesRes] = await Promise.all([
+        supabase.from("profiles").select("full_name, university, is_pro, upload_count").eq("id", user.id).single(),
+        supabase.from("courses").select("id, name, description, university, is_public").eq("user_id", user.id).order("created_at", { ascending: false }),
+      ])
 
-      if (res.status === 403) {
-        setLimitReached(true)
-        setUploadStatus("Free plan limit reached — upgrade to Pro for unlimited uploads.")
-        return
+      setProfile(profileRes.data)
+
+      if (coursesRes.data) {
+        const withCounts = await Promise.all(
+          coursesRes.data.map(async (course) => {
+            const { count } = await supabase
+              .from("documents")
+              .select("id", { count: "exact", head: true })
+              .eq("course_id", course.id)
+            return { ...course, doc_count: count ?? 0 }
+          })
+        )
+        setCourses(withCounts)
       }
 
-      setUploadStatus(data.message)
-    } catch {
-      setUploadStatus("Upload failed — is the backend running?")
-    } finally {
-      setUploading(false)
-    }
-  }
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/search?query=`)
+        const data = await res.json()
+        setPublicCourses(data.courses?.slice(0, 8) ?? [])
+      } catch { /* silently fail */ }
 
-  async function handleChat() {
-    if (!question.trim() || !user) return
-    const userMessage = question
-    setQuestion("")
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }])
-    setLoading(true)
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat?question=${encodeURIComponent(userMessage)}&user_id=${user.id}`, { method: "POST" })
-      const data = await res.json()
-      setMessages((prev) => [...prev, { role: "assistant", content: data.response }])
-    } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Something went wrong." }])
-    } finally {
       setLoading(false)
     }
-  }
+    load()
+  }, [])
 
-  async function handleGenerateQuiz() {
-    if (!quizTopic.trim() || !user) return
-    setQuizLoading(true)
-    setQuestions([])
-    setSelectedAnswers({})
-    setSubmitted(false)
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/quiz?topic=${encodeURIComponent(quizTopic)}&user_id=${user.id}&num_questions=5`,
-        { method: "POST" }
-      )
-      const data = await res.json()
-      setQuestions(data.quiz)
-    } catch {
-      console.error("Quiz generation failed")
-    } finally {
-      setQuizLoading(false)
-    }
-  }
+  if (loading || !user) return null
 
-  function getScore() {
-    return questions.filter((q, i) => selectedAnswers[i] === q.correct).length
-  }
+  const displayName = profile?.full_name?.split(" ")[0] || user.email?.split("@")[0] || "there"
+  const greeting = getGreeting()
 
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleChat() }
-  }
+  const stats = [
+    { label: "Courses", value: courses.length },
+    { label: "Uploads", value: profile?.upload_count ?? 0 },
+    { label: "Quizzes Taken", value: "—" },
+  ]
 
-  if (!user) return null
+  const quickActions = [
+    { label: "Upload PDF", desc: "Add study material to a course", href: "/courses", icon: "↑" },
+    { label: "Ask a question", desc: "Chat with your AI tutor", href: "/courses", icon: "?" },
+    { label: "Generate quiz", desc: "Test your knowledge", href: "/courses", icon: "✎" },
+  ]
 
   return (
     <main style={{ background: "#F5F0E8", minHeight: "100vh", display: "flex", flexDirection: "column", fontFamily: "'DM Sans', sans-serif" }}>
       <Navbar />
 
-      <div style={{ flex: 1, maxWidth: "860px", margin: "0 auto", width: "100%", padding: "48px" }}>
+      {upgraded && (
+        <div style={{ background: "#C8441A", padding: "12px 48px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "12px", color: "#F5F0E8", letterSpacing: "0.06em" }}>
+            Welcome to Pro — all features unlocked.
+          </span>
+          <button onClick={() => setUpgraded(false)} style={{ background: "transparent", border: "none", color: "#F5F0E8", cursor: "pointer", fontSize: "16px", lineHeight: 1 }}>×</button>
+        </div>
+      )}
 
-        <div style={{ marginBottom: "40px" }}>
+      <div style={{ flex: 1, maxWidth: "1100px", margin: "0 auto", width: "100%", padding: "56px 48px" }}>
+
+        {/* Welcome */}
+        <div style={{ marginBottom: "56px" }}>
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#C8441A", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ display: "inline-block", width: "24px", height: "1px", background: "#C8441A" }}></span>
-            Your study space
+            <span style={{ display: "inline-block", width: "24px", height: "1px", background: "#C8441A" }} />
+            {greeting}
           </div>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "40px", fontWeight: 700, color: "#1A1612", lineHeight: 1.1, letterSpacing: "-0.02em", margin: 0 }}>
-            What are we <em style={{ fontStyle: "italic", color: "#C8441A" }}>studying today?</em>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "48px", fontWeight: 700, color: "#1A1612", lineHeight: 1.05, letterSpacing: "-0.02em", margin: "0 0 12px" }}>
+            {greeting}, <em style={{ fontStyle: "italic", color: "#C8441A" }}>{displayName}.</em>
           </h1>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "17px", color: "#8C8070", margin: 0 }}>
+            Ready to study?
+          </p>
         </div>
 
-        <div style={{ background: "rgba(26,22,18,0.04)", border: "1px solid rgba(26,22,18,0.12)", borderRadius: "8px", padding: "28px", marginBottom: "24px" }}>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", fontWeight: 400, color: "#1A1612", marginBottom: "16px" }}>Upload course material</p>
-          <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "10px", border: "1.5px solid #1A1612", borderRadius: "4px", padding: "10px 16px", cursor: "pointer", fontSize: "13px", color: "#1A1612", fontFamily: "'DM Mono', monospace", letterSpacing: "0.05em" }}>
-              {file ? file.name : "Choose PDF"}
-              <input type="file" accept=".pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} style={{ display: "none" }} />
-            </label>
-            <button
-              onClick={handleUpload}
-              disabled={!file || uploading}
-              style={{ padding: "10px 20px", background: "#1A1612", color: "#F5F0E8", fontFamily: "'DM Mono', monospace", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", border: "none", borderRadius: "4px", cursor: "pointer", opacity: (!file || uploading) ? 0.4 : 1 }}
-            >
-              {uploading ? "Processing..." : "Upload"}
-            </button>
-          </div>
-          {uploadStatus && (
-            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "12px", color: limitReached ? "#C8441A" : "#0F6E56", marginTop: "12px", letterSpacing: "0.05em" }}>
-              {limitReached ? "⚠️" : "✓"} {uploadStatus}
-            </p>
-          )}
-          {limitReached && (
-            <Link href="/upgrade" style={{ fontFamily: "'DM Mono', monospace", fontSize: "12px", color: "#C8441A", display: "inline-block", marginTop: "8px", letterSpacing: "0.05em", textDecoration: "underline" }}>
-              Upgrade to Pro →
-            </Link>
-          )}
-        </div>
-
-        <div style={{ border: "1px solid rgba(26,22,18,0.12)", borderRadius: "8px", overflow: "hidden" }}>
-          <div style={{ padding: "20px 28px", borderBottom: "1px solid rgba(26,22,18,0.12)" }}>
-            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", color: "#1A1612", margin: 0 }}>Ask your tutor</p>
-          </div>
-          <div style={{ padding: "24px 28px", minHeight: "280px", maxHeight: "400px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "12px" }}>
-            {messages.length === 0 && (
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "12px", color: "#8C8070", letterSpacing: "0.05em" }}>Upload your syllabus and ask anything about your course...</p>
-            )}
-            {messages.map((msg, i) => (
-              <div key={i} style={{
-                padding: "12px 16px", borderRadius: "6px", fontSize: "14px", lineHeight: 1.6, maxWidth: "80%", whiteSpace: "pre-wrap",
-                alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-                background: msg.role === "user" ? "#1A1612" : "rgba(26,22,18,0.06)",
-                color: msg.role === "user" ? "#F5F0E8" : "#1A1612",
-                fontFamily: msg.role === "assistant" ? "'DM Sans', sans-serif" : "'DM Mono', monospace",
-              }}>
-                {msg.content}
+        {/* Stats */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "56px" }}>
+          {stats.map((stat) => (
+            <div key={stat.label} style={{ border: "1px solid rgba(26,22,18,0.12)", borderRadius: "8px", padding: "24px 28px" }}>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "10px" }}>
+                {stat.label}
               </div>
-            ))}
-            {loading && (
-              <div style={{ padding: "12px 16px", borderRadius: "6px", fontSize: "13px", background: "rgba(26,22,18,0.06)", color: "#8C8070", alignSelf: "flex-start", fontFamily: "'DM Mono', monospace", letterSpacing: "0.05em" }}>
-                Thinking...
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "36px", fontWeight: 700, color: "#1A1612" }}>
+                {stat.value}
               </div>
-            )}
-          </div>
-          <div style={{ display: "flex", gap: "0", borderTop: "1px solid rgba(26,22,18,0.12)" }}>
-            <input
-              type="text"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="e.g. What topics are on the exam?"
-              style={{ flex: 1, padding: "16px 20px", fontFamily: "'DM Sans', sans-serif", fontSize: "14px", background: "transparent", border: "none", outline: "none", color: "#1A1612" }}
-            />
-            <button
-              onClick={handleChat}
-              disabled={!question.trim() || loading}
-              style={{ padding: "16px 24px", background: "#1A1612", color: "#F5F0E8", fontFamily: "'DM Mono', monospace", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", border: "none", cursor: "pointer", opacity: (!question.trim() || loading) ? 0.4 : 1 }}
-            >
-              Ask
-            </button>
-          </div>
-        </div>
-
-        <div style={{ border: "1px solid rgba(26,22,18,0.12)", borderRadius: "8px", overflow: "hidden", marginTop: "24px" }}>
-          <div style={{ padding: "20px 28px", borderBottom: "1px solid rgba(26,22,18,0.12)" }}>
-            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", color: "#1A1612", margin: 0 }}>Generate a quiz</p>
-          </div>
-          <div style={{ padding: "24px 28px" }}>
-            <div style={{ display: "flex", gap: "0", border: "1.5px solid #1A1612", borderRadius: "4px", overflow: "hidden", marginBottom: "28px" }}>
-              <input
-                type="text"
-                value={quizTopic}
-                onChange={(e) => setQuizTopic(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleGenerateQuiz()}
-                placeholder="e.g. recursion, thermodynamics, the civil war..."
-                style={{ flex: 1, padding: "14px 18px", fontFamily: "'DM Sans', sans-serif", fontSize: "14px", background: "transparent", border: "none", outline: "none", color: "#1A1612" }}
-              />
-              <button
-                onClick={handleGenerateQuiz}
-                disabled={!quizTopic.trim() || quizLoading}
-                style={{ padding: "14px 24px", background: "#1A1612", color: "#F5F0E8", fontFamily: "'DM Mono', monospace", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", border: "none", cursor: "pointer", opacity: (!quizTopic.trim() || quizLoading) ? 0.4 : 1 }}
-              >
-                {quizLoading ? "Generating..." : "Generate"}
-              </button>
             </div>
+          ))}
+        </div>
 
-            {questions.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                {questions.map((q, i) => (
-                  <div key={i} style={{ borderBottom: "1px solid rgba(26,22,18,0.08)", paddingBottom: "24px" }}>
-                    <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", color: "#1A1612", marginBottom: "14px", lineHeight: 1.5 }}>
-                      {i + 1}. {q.question}
-                    </p>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                      {q.options.map((option: string) => {
-                        const isSelected = selectedAnswers[i] === option
-                        const isCorrect = option === q.correct
-                        let bg = "transparent"
-                        let border = "1px solid rgba(26,22,18,0.2)"
-                        let color = "#1A1612"
-                        if (submitted) {
-                          if (isCorrect) { bg = "rgba(15,110,86,0.08)"; border = "1px solid #0F6E56"; color = "#0F6E56" }
-                          else if (isSelected && !isCorrect) { bg = "rgba(200,68,26,0.08)"; border = "1px solid #C8441A"; color = "#C8441A" }
-                        } else if (isSelected) {
-                          bg = "rgba(26,22,18,0.06)"; border = "1px solid #1A1612"
-                        }
-                        return (
-                          <button
-                            key={option}
-                            onClick={() => !submitted && setSelectedAnswers((prev) => ({ ...prev, [i]: option }))}
-                            style={{ textAlign: "left", padding: "12px 16px", background: bg, border, borderRadius: "4px", cursor: submitted ? "default" : "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color, transition: "all 0.15s" }}
-                          >
-                            {option}
-                          </button>
-                        )
-                      })}
+        {/* Your Courses */}
+        <div style={{ marginBottom: "56px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "24px" }}>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "26px", fontWeight: 700, color: "#1A1612", margin: 0 }}>
+              Your courses
+            </h2>
+            <Link href="/courses" style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", letterSpacing: "0.08em", textDecoration: "none" }}>
+              Manage →
+            </Link>
+          </div>
+
+          {courses.length === 0 ? (
+            <div style={{ border: "1.5px dashed rgba(26,22,18,0.2)", borderRadius: "8px", padding: "64px", textAlign: "center" }}>
+              <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "22px", color: "#1A1612", margin: "0 0 8px" }}>No courses yet</p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color: "#8C8070", margin: "0 0 28px" }}>
+                Create your first course and start uploading study materials.
+              </p>
+              <Link
+                href="/courses"
+                style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#F5F0E8", letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none", background: "#C8441A", padding: "12px 24px", borderRadius: "4px", display: "inline-block" }}
+              >
+                Create your first course →
+              </Link>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
+              {courses.map((course) => (
+                <div key={course.id} style={{ border: "1px solid rgba(26,22,18,0.12)", borderRadius: "8px", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {course.university && (
+                    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "10px", color: "#8C8070", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                      {course.university}
                     </div>
-                    {submitted && (
-                      <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", marginTop: "10px", letterSpacing: "0.04em", lineHeight: 1.6 }}>
-                        {q.explanation}
+                  )}
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "18px", fontWeight: 700, color: "#1A1612", margin: "0 0 6px", lineHeight: 1.3 }}>
+                      {course.name}
+                    </h3>
+                    {course.description && (
+                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: "#8C8070", margin: 0, lineHeight: 1.5 }}>
+                        {course.description}
                       </p>
                     )}
                   </div>
-                ))}
-                {!submitted ? (
-                  <button
-                    onClick={() => setSubmitted(true)}
-                    disabled={Object.keys(selectedAnswers).length < questions.length}
-                    style={{ alignSelf: "flex-start", padding: "12px 24px", background: "#1A1612", color: "#F5F0E8", fontFamily: "'DM Mono', monospace", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", border: "none", borderRadius: "4px", cursor: "pointer", opacity: Object.keys(selectedAnswers).length < questions.length ? 0.4 : 1 }}
-                  >
-                    Submit answers
-                  </button>
-                ) : (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px", color: "#1A1612" }}>
-                      You scored <em style={{ color: "#C8441A" }}>{getScore()} / {questions.length}</em>
-                    </p>
-                    <button
-                      onClick={() => { setQuestions([]); setSelectedAnswers({}); setSubmitted(false); setQuizTopic("") }}
-                      style={{ padding: "10px 20px", background: "transparent", color: "#1A1612", fontFamily: "'DM Mono', monospace", fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", border: "1px solid rgba(26,22,18,0.3)", borderRadius: "4px", cursor: "pointer" }}
-                    >
-                      New quiz
-                    </button>
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "10px", color: "#8C8070", letterSpacing: "0.08em" }}>
+                    {course.doc_count} document{course.doc_count !== 1 ? "s" : ""}
                   </div>
-                )}
-              </div>
-            )}
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <Link
+                      href={`/courses/${course.id}`}
+                      style={{ flex: 1, textAlign: "center", padding: "9px 0", background: "#1A1612", borderRadius: "4px", fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#F5F0E8", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}
+                    >
+                      Study
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Quick Actions */}
+        <div style={{ marginBottom: "56px" }}>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "26px", fontWeight: 700, color: "#1A1612", margin: "0 0 24px" }}>
+            Quick actions
+          </h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+            {quickActions.map((action) => (
+              <Link
+                key={action.label}
+                href={action.href}
+                style={{ border: "1px solid rgba(26,22,18,0.12)", borderRadius: "8px", padding: "24px", textDecoration: "none", display: "flex", flexDirection: "column", gap: "8px" }}
+              >
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "20px", color: "#C8441A", lineHeight: 1 }}>
+                  {action.icon}
+                </div>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "17px", fontWeight: 700, color: "#1A1612" }}>
+                  {action.label}
+                </div>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: "#8C8070" }}>
+                  {action.desc}
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
+
+        {/* Discover */}
+        {publicCourses.length > 0 && (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "24px" }}>
+              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "26px", fontWeight: 700, color: "#1A1612", margin: 0 }}>
+                Discover courses
+              </h2>
+              <Link href="/search" style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", letterSpacing: "0.08em", textDecoration: "none" }}>
+                View all →
+              </Link>
+            </div>
+            <div style={{ display: "flex", gap: "16px", overflowX: "auto", paddingBottom: "8px" }}>
+              {publicCourses.map((course) => (
+                <Link
+                  key={course.id}
+                  href={`/courses/${course.id}`}
+                  style={{ minWidth: "220px", border: "1px solid rgba(26,22,18,0.12)", borderRadius: "8px", padding: "20px", textDecoration: "none", flexShrink: 0, display: "flex", flexDirection: "column", gap: "6px" }}
+                >
+                  {course.university && (
+                    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "10px", color: "#C8441A", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                      {course.university}
+                    </div>
+                  )}
+                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "15px", fontWeight: 700, color: "#1A1612", margin: 0, lineHeight: 1.3 }}>
+                    {course.name}
+                  </h3>
+                  {course.description && (
+                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px", color: "#8C8070", margin: 0, lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {course.description}
+                    </p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
 
       <footer style={{ padding: "20px 48px", borderTop: "1px solid rgba(26,22,18,0.12)", display: "flex", justifyContent: "space-between" }}>

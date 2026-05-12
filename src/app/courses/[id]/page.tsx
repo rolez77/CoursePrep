@@ -25,15 +25,15 @@ export default function PublicCourse() {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
 
-      // Fetch course
+      // Fetch course — accessible if public or owned by current user
       const { data: courseData } = await supabase
         .from("courses")
         .select("*")
         .eq("id", id)
-        .eq("is_public", true)
         .single()
 
       if (!courseData) { router.push("/search"); return }
+      if (!courseData.is_public && courseData.user_id !== user?.id) { router.push("/search"); return }
       setCourse(courseData)
 
       // Fetch or generate summary
