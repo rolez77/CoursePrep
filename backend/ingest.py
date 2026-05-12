@@ -26,7 +26,7 @@ text_splitter = RecursiveCharacterTextSplitter(
 
 
 
-async def ingest_pdf(file_bytes: bytes, filename: str, user_id: str):
+async def ingest_pdf(file_bytes: bytes, filename: str, user_id: str, course_id: str = None):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         tmp.write(file_bytes)
         tmp_path = tmp.name
@@ -42,6 +42,7 @@ async def ingest_pdf(file_bytes: bytes, filename: str, user_id: str):
             "content": chunk.page_content,
             "embedding": embedding,
             "user_id": user_id,
+            "course_id": course_id,
             "metadata":{
                 "filename": filename,
                 "page": chunk.metadata.get("page", 0)
