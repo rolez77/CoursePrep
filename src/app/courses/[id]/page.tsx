@@ -7,12 +7,20 @@ import Link from "next/link"
 import {
   Brain, Bell, User, Menu, ArrowLeft, FileText, Upload,
   Send, Globe, Lock, Loader2, X, BookOpen, Download,
+  HelpCircle, CheckCircle2, XCircle,
 } from "lucide-react"
 
 interface Document {
   filename: string
   created_at: string
   file_url?: string
+}
+
+interface QuizQuestion {
+  question: string
+  options: string[]
+  correct: string
+  explanation: string
 }
 
 export default function CoursePage() {
@@ -35,6 +43,15 @@ export default function CoursePage() {
   const [question, setQuestion] = useState("")
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([])
   const [chatLoading, setChatLoading] = useState(false)
+
+  const [showQuizModal, setShowQuizModal] = useState(false)
+  const [quizTopic, setQuizTopic] = useState("")
+  const [quizNumQuestions, setQuizNumQuestions] = useState(5)
+  const [quizLoading, setQuizLoading] = useState(false)
+  const [quiz, setQuiz] = useState<QuizQuestion[] | null>(null)
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, string>>({})
+  const [quizSubmitted, setQuizSubmitted] = useState(false)
+  const [quizError, setQuizError] = useState<string | null>(null)
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -147,6 +164,34 @@ export default function CoursePage() {
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleChat() }
+  }
+
+  async function handleCreateQuiz() {
+    if (!quizTopic.trim() || quizLoading) return
+    setQuizLoading(true)
+    setQuiz(null)
+    setQuizAnswers({})
+    setQuizSubmitted(false)
+    setQuizError(null)
+    try {
+      const userId = user?.id || "anonymous"
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/quiz?topic=${encodeURIComponent(quizTopic)}&user_id=${userId}&num_questions=${quizNumQuestions}&course_id=${id}`,
+        { method: "POST" }
+      )
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.detail || "Failed to generate quiz")
+      setQuiz(data.quiz)
+    } catch (err: any) {
+      setQuizError(err.message)
+    } finally {
+      setQuizLoading(false)
+    }
+  }
+
+  function getScore() {
+    if (!quiz) return 0
+    return quiz.filter((q, i) => quizAnswers[i] === q.correct).length
   }
 
   function timeAgo(dateStr: string) {
@@ -402,6 +447,28 @@ export default function CoursePage() {
               </div>
             )}
 
+            {/* Study Tools */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-gray-500" />
+                <h2 className="font-semibold text-gray-900">Study Tools</h2>
+              </div>
+              <div className="p-4">
+                <button
+                  onClick={() => setShowQuizModal(true)}
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors"
+                >
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
+                    <HelpCircle className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-medium text-purple-900">Create Quiz</p>
+                    <p className="text-xs text-purple-600">Test your knowledge</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
             {/* Documents */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
@@ -455,6 +522,135 @@ export default function CoursePage() {
           </div>
         </div>
       </main>
+
+      {/* Quiz modal */}
+      {showQuizModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-purple-500" />
+                <h2 className="text-lg font-semibold text-gray-900">Quiz Generator</h2>
+              </div>
+              <button onClick={() => setShowQuizModal(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-6 flex-1">
+              {!quiz ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
+                    <input
+                      type="text"
+                      value={quizTopic}
+                      onChange={(e) => setQuizTopic(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleCreateQuiz()}
+                      placeholder="e.g. Photosynthesis, World War II, Calculus..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Number of Questions</label>
+                    <div className="flex gap-2">
+                      {[5, 10, 15].map((n) => (
+                        <button
+                          key={n}
+                          onClick={() => setQuizNumQuestions(n)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                            quizNumQuestions === n
+                              ? "bg-purple-600 text-white border-purple-600"
+                              : "bg-white text-gray-700 border-gray-300 hover:border-purple-400"
+                          }`}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {quizError && <p className="text-sm text-red-600">{quizError}</p>}
+                  <button
+                    onClick={handleCreateQuiz}
+                    disabled={!quizTopic.trim() || quizLoading}
+                    className="w-full py-2.5 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 disabled:bg-gray-200 disabled:text-gray-400 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {quizLoading ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Generating quiz...</>
+                    ) : "Generate Quiz"}
+                  </button>
+                </div>
+              ) : quizSubmitted ? (
+                <div className="space-y-6">
+                  <div className="text-center py-4">
+                    <div className="text-4xl font-bold text-gray-900">{getScore()}/{quiz.length}</div>
+                    <p className="text-gray-500 mt-1">
+                      {getScore() === quiz.length ? "Perfect score!" : getScore() >= quiz.length * 0.7 ? "Great job!" : "Keep studying!"}
+                    </p>
+                  </div>
+                  {quiz.map((q, i) => {
+                    const isCorrect = quizAnswers[i] === q.correct
+                    return (
+                      <div key={i} className={`rounded-lg border p-4 ${isCorrect ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}>
+                        <div className="flex items-start gap-2 mb-3">
+                          {isCorrect
+                            ? <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+                            : <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />}
+                          <p className="text-sm font-medium text-gray-900">{q.question}</p>
+                        </div>
+                        {!isCorrect && (
+                          <p className="text-xs text-gray-600 ml-7 mb-1">Your answer: <span className="text-red-600">{quizAnswers[i] || "Not answered"}</span></p>
+                        )}
+                        <p className="text-xs text-gray-600 ml-7 mb-1">Correct: <span className="text-green-700 font-medium">{q.correct}</span></p>
+                        <p className="text-xs text-gray-500 ml-7">{q.explanation}</p>
+                      </div>
+                    )
+                  })}
+                  <button
+                    onClick={() => { setQuiz(null); setQuizAnswers({}); setQuizSubmitted(false); setQuizTopic("") }}
+                    className="w-full py-2.5 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    New Quiz
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {quiz.map((q, i) => (
+                    <div key={i} className="space-y-3">
+                      <p className="text-sm font-medium text-gray-900">
+                        <span className="text-purple-600 font-bold mr-1">{i + 1}.</span>
+                        {q.question}
+                      </p>
+                      <div className="space-y-2">
+                        {q.options.map((opt) => (
+                          <button
+                            key={opt}
+                            onClick={() => setQuizAnswers((prev) => ({ ...prev, [i]: opt }))}
+                            className={`w-full text-left px-4 py-3 rounded-lg border text-sm transition-colors ${
+                              quizAnswers[i] === opt
+                                ? "border-purple-500 bg-purple-50 text-purple-900"
+                                : "border-gray-200 hover:border-gray-300 text-gray-700"
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => setQuizSubmitted(true)}
+                    disabled={Object.keys(quizAnswers).length < quiz.length}
+                    className="w-full py-2.5 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 disabled:bg-gray-200 disabled:text-gray-400 transition-colors"
+                  >
+                    Submit ({Object.keys(quizAnswers).length}/{quiz.length} answered)
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Upgrade modal */}
       {showUpgradeModal && (

@@ -19,7 +19,7 @@ embeddings = OpenAIEmbeddings(
 
 claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
-async def generate_quiz(topic: str, user_id: str, num_questions: int = 5):
+async def generate_quiz(topic: str, user_id: str, num_questions: int = 5, course_id: str = None):
 
     topic_embedding = embeddings.embed_query(topic)
 
