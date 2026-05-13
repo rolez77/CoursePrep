@@ -3,8 +3,11 @@
 import { useEffect, useState, Suspense } from "react"
 import { createClient } from "@/app/lib/supabase"
 import { useRouter, useSearchParams } from "next/navigation"
-import Navbar from "@/app/components/Navbar"
 import Link from "next/link"
+import {
+  BookOpen, Brain, FileText, Upload, Award, Clock,
+  Users, Plus, Bell, User, Menu, X,
+} from "lucide-react"
 
 type Profile = {
   full_name: string | null
@@ -29,11 +32,31 @@ type PublicCourse = {
   university: string | null
 }
 
-function getGreeting() {
-  const h = new Date().getHours()
-  if (h < 12) return "Good morning"
-  if (h < 17) return "Good afternoon"
-  return "Good evening"
+type RecentDoc = {
+  id: string
+  filename: string
+  course_id: number
+  course_name: string
+  created_at: string
+}
+
+const COURSE_COLORS = [
+  "bg-blue-500",
+  "bg-purple-500",
+  "bg-green-500",
+  "bg-orange-500",
+  "bg-pink-500",
+  "bg-teal-500",
+]
+
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
 }
 
 function DashboardContent() {
@@ -41,6 +64,7 @@ function DashboardContent() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [courses, setCourses] = useState<Course[]>([])
   const [publicCourses, setPublicCourses] = useState<PublicCourse[]>([])
+  const [recentDocs, setRecentDocs] = useState<RecentDoc[]>([])
   const [loading, setLoading] = useState(true)
   const [upgraded, setUpgraded] = useState(false)
   const router = useRouter()
@@ -72,8 +96,9 @@ function DashboardContent() {
 
       setProfile(profileRes.data)
 
+      let coursesWithCounts: Course[] = []
       if (coursesRes.data) {
-        const withCounts = await Promise.all(
+        coursesWithCounts = await Promise.all(
           coursesRes.data.map(async (course) => {
             const { count } = await supabase
               .from("documents")
@@ -82,7 +107,22 @@ function DashboardContent() {
             return { ...course, doc_count: count ?? 0 }
           })
         )
-        setCourses(withCounts)
+        setCourses(coursesWithCounts)
+
+        if (coursesWithCounts.length > 0) {
+          const courseIds = coursesWithCounts.map((c) => c.id)
+          const { data: docs } = await supabase
+            .from("documents")
+            .select("id, filename, course_id, created_at")
+            .in("course_id", courseIds)
+            .order("created_at", { ascending: false })
+            .limit(4)
+
+          if (docs) {
+            const courseMap = Object.fromEntries(coursesWithCounts.map((c) => [c.id, c.name]))
+            setRecentDocs(docs.map((d) => ({ ...d, course_name: courseMap[d.course_id] || "Unknown" })))
+          }
+        }
       }
 
       try {
@@ -99,193 +139,200 @@ function DashboardContent() {
   if (loading || !user) return null
 
   const displayName = profile?.full_name?.split(" ")[0] || user.email?.split("@")[0] || "there"
-  const greeting = getGreeting()
 
   const stats = [
-    { label: "Courses", value: courses.length },
-    { label: "Uploads", value: profile?.upload_count ?? 0 },
-    { label: "Quizzes Taken", value: "—" },
-  ]
-
-  const quickActions = [
-    { label: "Upload PDF", desc: "Add study material to a course", href: "/courses", icon: "↑" },
-    { label: "Ask a question", desc: "Chat with your AI tutor", href: "/courses", icon: "?" },
-    { label: "Generate quiz", desc: "Test your knowledge", href: "/courses", icon: "✎" },
+    { label: "Total Courses", value: String(courses.length), icon: BookOpen, color: "text-blue-500", bgColor: "bg-blue-50" },
+    { label: "Quizzes Taken", value: "—", icon: Brain, color: "text-purple-500", bgColor: "bg-purple-50" },
+    { label: "Materials Uploaded", value: String(profile?.upload_count ?? 0), icon: FileText, color: "text-green-500", bgColor: "bg-green-50" },
+    { label: "Study Hours", value: "—", icon: Clock, color: "text-orange-500", bgColor: "bg-orange-50" },
   ]
 
   return (
-    <main style={{ background: "#F5F0E8", minHeight: "100vh", display: "flex", flexDirection: "column", fontFamily: "'DM Sans', sans-serif" }}>
-      <Navbar />
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-8">
+              <Link href="/dashboard" className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Brain className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-xl font-bold text-gray-900">CoursePrep</span>
+              </Link>
+              <nav className="hidden md:flex items-center gap-6">
+                <Link href="/dashboard" className="text-blue-600 font-medium text-sm">Dashboard</Link>
+                <Link href="/courses" className="text-gray-600 hover:text-gray-900 text-sm">My Courses</Link>
+                <Link href="/search" className="text-gray-600 hover:text-gray-900 text-sm">Discover</Link>
+              </nav>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
+                <Bell className="w-5 h-5" />
+              </button>
+              <Link href="/profile" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
+                <User className="w-5 h-5" />
+              </Link>
+              <button className="md:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
+                <Menu className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
 
       {upgraded && (
-        <div style={{ background: "#C8441A", padding: "12px 48px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "12px", color: "#F5F0E8", letterSpacing: "0.06em" }}>
-            Welcome to Pro — all features unlocked.
-          </span>
-          <button onClick={() => setUpgraded(false)} style={{ background: "transparent", border: "none", color: "#F5F0E8", cursor: "pointer", fontSize: "16px", lineHeight: 1 }}>×</button>
+        <div className="bg-blue-600 px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+          <span className="text-sm text-white font-medium">Welcome to Pro — all features unlocked.</span>
+          <button onClick={() => setUpgraded(false)} className="text-white hover:text-white/80">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
-      <div style={{ flex: 1, maxWidth: "1100px", margin: "0 auto", width: "100%", padding: "56px 48px" }}>
-
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome */}
-        <div style={{ marginBottom: "56px" }}>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#C8441A", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ display: "inline-block", width: "24px", height: "1px", background: "#C8441A" }} />
-            {greeting}
-          </div>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "48px", fontWeight: 700, color: "#1A1612", lineHeight: 1.05, letterSpacing: "-0.02em", margin: "0 0 12px" }}>
-            {greeting}, <em style={{ fontStyle: "italic", color: "#C8441A" }}>{displayName}.</em>
-          </h1>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "17px", color: "#8C8070", margin: 0 }}>
-            Ready to study?
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, {displayName}! 👋</h1>
+          <p className="text-gray-600">
+            {courses.length === 0
+              ? "Create your first course to get started."
+              : `You have ${courses.length} active course${courses.length !== 1 ? "s" : ""}. Let's get prepared!`}
           </p>
         </div>
 
-        {/* Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "56px" }}>
-          {stats.map((stat) => (
-            <div key={stat.label} style={{ border: "1px solid rgba(26,22,18,0.12)", borderRadius: "8px", padding: "24px 28px" }}>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "10px" }}>
-                {stat.label}
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat, index) => (
+            <div key={index} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+              <div className="mb-3">
+                <div className={`inline-flex p-3 rounded-lg ${stat.bgColor}`}>
+                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                </div>
               </div>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "36px", fontWeight: 700, color: "#1A1612" }}>
-                {stat.value}
-              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</div>
+              <div className="text-sm text-gray-600">{stat.label}</div>
             </div>
           ))}
         </div>
 
-        {/* Your Courses */}
-        <div style={{ marginBottom: "56px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "24px" }}>
-            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "26px", fontWeight: 700, color: "#1A1612", margin: 0 }}>
-              Your courses
-            </h2>
-            <Link href="/courses" style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", letterSpacing: "0.08em", textDecoration: "none" }}>
-              Manage →
+        {/* Quick Actions */}
+        <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl p-6 mb-8 text-white">
+          <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Link href="/courses" className="bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-lg p-4 flex items-center gap-3 transition-all text-white no-underline">
+              <Upload className="w-5 h-5 flex-shrink-0" />
+              <span className="font-medium">Upload Materials</span>
+            </Link>
+            <Link href="/courses" className="bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-lg p-4 flex items-center gap-3 transition-all text-white no-underline">
+              <Brain className="w-5 h-5 flex-shrink-0" />
+              <span className="font-medium">Ask AI Tutor</span>
+            </Link>
+            <Link href="/courses" className="bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-lg p-4 flex items-center gap-3 transition-all text-white no-underline">
+              <Award className="w-5 h-5 flex-shrink-0" />
+              <span className="font-medium">Generate Quiz</span>
             </Link>
           </div>
-
-          {courses.length === 0 ? (
-            <div style={{ border: "1.5px dashed rgba(26,22,18,0.2)", borderRadius: "8px", padding: "64px", textAlign: "center" }}>
-              <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "22px", color: "#1A1612", margin: "0 0 8px" }}>No courses yet</p>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color: "#8C8070", margin: "0 0 28px" }}>
-                Create your first course and start uploading study materials.
-              </p>
-              <Link
-                href="/courses"
-                style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#F5F0E8", letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none", background: "#C8441A", padding: "12px 24px", borderRadius: "4px", display: "inline-block" }}
-              >
-                Create your first course →
-              </Link>
-            </div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
-              {courses.map((course) => (
-                <div key={course.id} style={{ border: "1px solid rgba(26,22,18,0.12)", borderRadius: "8px", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {course.university && (
-                    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "10px", color: "#8C8070", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                      {course.university}
-                    </div>
-                  )}
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "18px", fontWeight: 700, color: "#1A1612", margin: "0 0 6px", lineHeight: 1.3 }}>
-                      {course.name}
-                    </h3>
-                    {course.description && (
-                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: "#8C8070", margin: 0, lineHeight: 1.5 }}>
-                        {course.description}
-                      </p>
-                    )}
-                  </div>
-                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "10px", color: "#8C8070", letterSpacing: "0.08em" }}>
-                    {course.doc_count} document{course.doc_count !== 1 ? "s" : ""}
-                  </div>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <Link
-                      href={`/courses/${course.id}`}
-                      style={{ flex: 1, textAlign: "center", padding: "9px 0", background: "#1A1612", borderRadius: "4px", fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#F5F0E8", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}
-                    >
-                      Study
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
-        {/* Quick Actions */}
-        <div style={{ marginBottom: "56px" }}>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "26px", fontWeight: 700, color: "#1A1612", margin: "0 0 24px" }}>
-            Quick actions
-          </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
-            {quickActions.map((action) => (
-              <Link
-                key={action.label}
-                href={action.href}
-                style={{ border: "1px solid rgba(26,22,18,0.12)", borderRadius: "8px", padding: "24px", textDecoration: "none", display: "flex", flexDirection: "column", gap: "8px" }}
-              >
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "20px", color: "#C8441A", lineHeight: 1 }}>
-                  {action.icon}
-                </div>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "17px", fontWeight: 700, color: "#1A1612" }}>
-                  {action.label}
-                </div>
-                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: "#8C8070" }}>
-                  {action.desc}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Discover */}
-        {publicCourses.length > 0 && (
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "24px" }}>
-              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "26px", fontWeight: 700, color: "#1A1612", margin: 0 }}>
-                Discover courses
-              </h2>
-              <Link href="/search" style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", letterSpacing: "0.08em", textDecoration: "none" }}>
-                View all →
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* My Courses */}
+          <div className="lg:col-span-2">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">My Courses</h2>
+              <Link href="/courses" className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium no-underline">
+                <Plus className="w-4 h-4" />
+                Add Course
               </Link>
             </div>
-            <div style={{ display: "flex", gap: "16px", overflowX: "auto", paddingBottom: "8px" }}>
-              {publicCourses.map((course) => (
-                <Link
-                  key={course.id}
-                  href={`/courses/${course.id}`}
-                  style={{ minWidth: "220px", border: "1px solid rgba(26,22,18,0.12)", borderRadius: "8px", padding: "20px", textDecoration: "none", flexShrink: 0, display: "flex", flexDirection: "column", gap: "6px" }}
-                >
-                  {course.university && (
-                    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "10px", color: "#C8441A", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                      {course.university}
-                    </div>
-                  )}
-                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "15px", fontWeight: 700, color: "#1A1612", margin: 0, lineHeight: 1.3 }}>
-                    {course.name}
-                  </h3>
-                  {course.description && (
-                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px", color: "#8C8070", margin: 0, lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                      {course.description}
-                    </p>
-                  )}
+
+            {courses.length === 0 ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-16 text-center">
+                <p className="text-xl font-semibold text-gray-900 mb-2">No courses yet</p>
+                <p className="text-gray-600 mb-6">Create your first course and start uploading study materials.</p>
+                <Link href="/courses" className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium no-underline">
+                  <Plus className="w-4 h-4" />
+                  Create your first course
                 </Link>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {courses.map((course, index) => (
+                  <div key={course.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                    <div className={`h-2 ${COURSE_COLORS[index % COURSE_COLORS.length]}`} />
+                    <div className="p-6">
+                      <div className="mb-4">
+                        {course.university && (
+                          <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">{course.university}</div>
+                        )}
+                        <h3 className="font-bold text-gray-900 mb-1 leading-snug">{course.name}</h3>
+                        {course.description && (
+                          <p className="text-sm text-gray-600 line-clamp-2">{course.description}</p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                          <FileText className="w-4 h-4" />
+                          <span>{course.doc_count} material{course.doc_count !== 1 ? "s" : ""}</span>
+                        </div>
+                        <Link
+                          href={`/courses/${course.id}`}
+                          className="px-4 py-2 bg-gray-900 text-white text-xs font-medium rounded-lg hover:bg-gray-700 transition-colors no-underline"
+                        >
+                          Study →
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
 
-      </div>
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Activity</h2>
 
-      <footer style={{ padding: "20px 48px", borderTop: "1px solid rgba(26,22,18,0.12)", display: "flex", justifyContent: "space-between" }}>
-        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070" }}>© 2026 CoursePrep</span>
-        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070" }}>courseprep.xyz</span>
-      </footer>
-    </main>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+              {recentDocs.length > 0 ? (
+                <div className="space-y-6">
+                  {recentDocs.map((doc) => (
+                    <div key={doc.id} className="flex gap-4">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-green-100 text-green-600 flex items-center justify-center">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 mb-0.5 truncate">{doc.filename}</p>
+                        <p className="text-sm text-gray-600">{doc.course_name}</p>
+                        <p className="text-xs text-gray-500 mt-1">{timeAgo(doc.created_at)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">No activity yet. Upload materials to get started.</p>
+              )}
+            </div>
+
+            {publicCourses.length > 0 && (
+              <div className="bg-gradient-to-br from-green-500 to-teal-600 rounded-xl p-6 text-white">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-5 h-5" />
+                  <h3 className="font-bold">Discover Courses</h3>
+                </div>
+                <p className="text-sm text-white/90 mb-4">
+                  Explore materials shared by other students at your university
+                </p>
+                <Link href="/search" className="block w-full text-center bg-white text-green-600 font-medium py-2 px-4 rounded-lg hover:bg-white/90 transition-colors no-underline">
+                  Browse Courses
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
   )
 }
 

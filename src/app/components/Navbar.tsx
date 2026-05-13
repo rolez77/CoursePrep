@@ -16,6 +16,7 @@ const linkStyle: React.CSSProperties = {
 export default function Navbar() {
   const [user, setUser] = useState<any>(null)
   const [isPro, setIsPro] = useState(false)
+  const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function Navbar() {
           .single()
         if (data?.is_pro) setIsPro(true)
       }
+      setLoading(false)
     }
     loadUser()
   }, [])
@@ -40,15 +42,14 @@ export default function Navbar() {
         Course<span style={{ color: "#C8441A" }}>Prep</span>
       </Link>
       <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        <Link href="/dashboard" style={linkStyle}>Dashboard</Link>
         <Link href="/courses" style={linkStyle}>Courses</Link>
         <Link href="/search" style={linkStyle}>Search</Link>
-        {!isPro && (
+        {!loading && !isPro && (
           <Link href="/upgrade" style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#F5F0E8", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none", background: "#C8441A", padding: "6px 14px", borderRadius: "100px" }}>
             Upgrade
           </Link>
         )}
-        {user ? (
+        {!loading && (user ? (
           <Link href="/profile" style={{ ...linkStyle, border: "1px solid rgba(26,22,18,0.12)", padding: "6px 14px", borderRadius: "100px" }}>
             Profile
           </Link>
@@ -56,7 +57,7 @@ export default function Navbar() {
           <Link href="/login" style={{ ...linkStyle, color: "#F5F0E8", background: "#1A1612", padding: "8px 16px", borderRadius: "4px" }}>
             Log in
           </Link>
-        )}
+        ))}
       </div>
     </nav>
   )

@@ -1,10 +1,10 @@
-// src/app/login/page.tsx
 "use client"
 
 import { useState } from "react"
 import { createClient } from "@/app/lib/supabase"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { Brain } from "lucide-react"
 
 export default function Login() {
   const [email, setEmail] = useState("")
@@ -27,59 +27,81 @@ export default function Login() {
   }
 
   return (
-    <main style={{ background: "#F5F0E8", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "28px 48px", borderBottom: "1px solid rgba(26,22,18,0.12)" }}>
-        <Link href="/" style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px", fontWeight: 700, color: "#1A1612", textDecoration: "none" }}>
-          Course<span style={{ color: "#C8441A" }}>Prep</span>
-        </Link>
-        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", letterSpacing: "0.1em", textTransform: "uppercase", border: "1px solid rgba(26,22,18,0.12)", padding: "6px 12px", borderRadius: "100px" }}>Sign in</span>
-      </nav>
-
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "48px" }}>
-        <div style={{ width: "100%", maxWidth: "400px" }}>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#C8441A", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ display: "inline-block", width: "24px", height: "1px", background: "#C8441A" }}></span>
-            Welcome back
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <Brain className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold text-gray-900">CoursePrep</span>
+            </Link>
+            <Link href="/signup" className="text-sm text-gray-600 hover:text-gray-900">
+              Don't have an account? <span className="font-medium text-blue-600">Sign up</span>
+            </Link>
           </div>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "42px", fontWeight: 700, color: "#1A1612", lineHeight: 1.1, letterSpacing: "-0.02em", marginBottom: "32px" }}>
-            Log in to<br /><em style={{ fontStyle: "italic", color: "#C8441A" }}>CoursePrep</em>
-          </h1>
+        </div>
+      </header>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={handleKeyDown}
-              style={{ padding: "14px 18px", fontFamily: "'DM Sans', sans-serif", fontSize: "14px", background: "transparent", border: "1.5px solid #1A1612", borderRadius: "4px", outline: "none", color: "#1A1612" }}
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={handleKeyDown}
-              style={{ padding: "14px 18px", fontFamily: "'DM Sans', sans-serif", fontSize: "14px", background: "transparent", border: "1.5px solid #1A1612", borderRadius: "4px", outline: "none", color: "#1A1612" }}
-            />
+      {/* Form */}
+      <div className="flex-1 flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h1>
+            <p className="text-gray-600 text-sm">Sign in to your CoursePrep account</p>
           </div>
 
-          {error && <p style={{ color: "#C8441A", fontSize: "13px", marginBottom: "16px", fontFamily: "'DM Mono', monospace" }}>{error}</p>}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  placeholder="you@university.edu"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
 
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            style={{ width: "100%", padding: "16px", background: "#1A1612", color: "#F5F0E8", fontFamily: "'DM Sans', sans-serif", fontSize: "14px", fontWeight: 500, border: "none", borderRadius: "4px", cursor: "pointer", opacity: loading ? 0.6 : 1, letterSpacing: "0.04em" }}
-          >
-            {loading ? "Logging in..." : "Log in"}
-          </button>
+            {error && (
+              <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                {error}
+              </div>
+            )}
 
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: "#8C8070", textAlign: "center", marginTop: "24px" }}>
+            <button
+              onClick={handleLogin}
+              disabled={loading}
+              className="w-full py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {loading ? "Signing in..." : "Sign in"}
+            </button>
+          </div>
+
+          <p className="text-center text-sm text-gray-500 mt-6">
             Don't have an account?{" "}
-            <Link href="/signup" style={{ color: "#1A1612", fontWeight: 500 }}>Sign up</Link>
+            <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-700">
+              Sign up for free
+            </Link>
           </p>
         </div>
       </div>
-    </main>
+    </div>
   )
 }

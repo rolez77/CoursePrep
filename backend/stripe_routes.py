@@ -34,3 +34,21 @@ async def create_checkout_session(request: Request):
         return {"url": session.url}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/create-portal-session")
+async def create_portal_session(request: Request):
+    body = await request.json()
+    customer_id = body.get("customer_id")
+
+    if not customer_id:
+        raise HTTPException(status_code=400, detail="Missing customer_id")
+
+    try:
+        session = stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url="http://localhost:3000/profile",
+        )
+        return {"url": session.url}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
