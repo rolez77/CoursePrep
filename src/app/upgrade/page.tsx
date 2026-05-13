@@ -60,8 +60,6 @@ export default function Upgrade() {
     "Unlimited AI questions",
     "Unlimited quiz questions",
     "Professor-style exam prep",
-    "Spaced repetition",
-    "Priority support",
   ]
 
   return (

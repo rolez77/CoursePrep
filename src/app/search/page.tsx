@@ -96,7 +96,7 @@ export default function SearchPage() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search by course name, university, topic..."
-            className="flex-1 px-4 py-4 text-sm bg-transparent outline-none text-gray-900 placeholder-gray-400"
+            className="flex-1 px-4 py-4 text-sm bg-transparent outline-none text-gray-900! placeholder-gray-400"
           />
           <button
             onClick={handleSearch}

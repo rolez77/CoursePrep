@@ -19,6 +19,15 @@ export default function SignUp() {
   async function handleSignUp() {
     setLoading(true)
     setError("")
+
+    const check = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/can-signup`)
+    const {allowed} = await check.json()
+
+    if (!allowed) {
+        setError("We've reached our beta capacity. Join the waitlist at courseprep.xyz")
+        setLoading(false)
+        return
+    }
     const { error } = await supabase.auth.signUp({
       email, password,
       options: { data: { full_name: fullName, university } }

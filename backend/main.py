@@ -145,3 +145,9 @@ async def webhook_test(request: Request):
     print("WEBHOOK TEST HIT:", body[:100])
     return {"status": "ok"}
 
+@app.get("/can-signup")
+async def can_signup():
+    res = supabase.table("profiles").select("id", count="exact").execute()
+    user_count = res.count
+    MAX_USERS = 100
+    return {"allowed": user_count < MAX_USERS, "count": user_count}
