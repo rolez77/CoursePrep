@@ -6,12 +6,13 @@ import { createClient } from "@/app/lib/supabase"
 import Link from "next/link"
 import {
   Brain, Bell, User, Menu, ArrowLeft, FileText, Upload,
-  Send, Globe, Lock, Loader2, X, BookOpen,
+  Send, Globe, Lock, Loader2, X, BookOpen, Download,
 } from "lucide-react"
 
 interface Document {
   filename: string
   created_at: string
+  file_url?: string
 }
 
 export default function CoursePage() {
@@ -30,6 +31,7 @@ export default function CoursePage() {
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [question, setQuestion] = useState("")
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([])
   const [chatLoading, setChatLoading] = useState(false)
@@ -70,19 +72,22 @@ export default function CoursePage() {
   }, [id])
 
   async function fetchDocuments() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("documents")
-      .select("filename, created_at")
+      .select("metadata, created_at")
       .eq("course_id", id)
       .order("created_at", { ascending: false })
 
+    if (error) { console.error("fetchDocuments:", error); return }
     if (data) {
       const seen = new Set<string>()
-      const unique = data.filter((d) => {
-        if (seen.has(d.filename)) return false
-        seen.add(d.filename)
-        return true
-      })
+      const unique: Document[] = []
+      for (const d of data) {
+        const filename = d.metadata?.filename
+        if (!filename || seen.has(filename)) continue
+        seen.add(filename)
+        unique.push({ filename, created_at: d.created_at, file_url: d.metadata?.file_url })
+      }
       setDocuments(unique)
     }
   }
@@ -106,6 +111,7 @@ export default function CoursePage() {
         body: formData,
       })
       const data = await res.json()
+      if (res.status === 403) { setShowUpgradeModal(true); return }
       if (!res.ok) throw new Error(data.detail || "Upload failed")
       setUploadSuccess(`"${file.name}" uploaded successfully.`)
       fetchDocuments()
@@ -237,9 +243,31 @@ export default function CoursePage() {
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span className="text-sm">Generating summary from your materials...</span>
                   </div>
-                ) : (
-                  <p className="text-sm text-gray-700 leading-relaxed">{summary}</p>
-                )}
+                ) : (() => {
+                  let parsed: any = null
+                  try { parsed = JSON.parse(summary) } catch {}
+                  if (parsed) {
+                    const rows: { label: string; value: string | null }[] = [
+                      { label: "Course", value: course.name },
+                      { label: "Professor", value: parsed.professor },
+                      { label: "Lecture Days", value: parsed.days },
+                      { label: "Topics", value: Array.isArray(parsed.topics) && parsed.topics.length ? parsed.topics.join(", ") : null },
+                      { label: "Homeworks", value: parsed.homeworks },
+                      { label: "Exams", value: parsed.exams },
+                    ]
+                    return (
+                      <dl className="space-y-3">
+                        {rows.filter(r => r.value).map(r => (
+                          <div key={r.label} className="flex gap-3 text-sm">
+                            <dt className="w-28 flex-shrink-0 text-xs font-semibold text-gray-500 uppercase tracking-wide pt-0.5">{r.label}</dt>
+                            <dd className="text-gray-800">{r.value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    )
+                  }
+                  return <p className="text-sm text-gray-700 leading-relaxed">{summary}</p>
+                })()}
               </div>
             </div>
 
@@ -395,17 +423,31 @@ export default function CoursePage() {
                     )}
                   </div>
                 ) : (
-                  documents.map((doc, i) => (
-                    <div key={i} className="px-6 py-3 flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <FileText className="w-4 h-4 text-blue-500" />
+                  documents.map((doc, i) => {
+                    const fileUrl = doc.file_url
+                    return (
+                      <div key={i} className="px-6 py-3 flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <FileText className="w-4 h-4 text-blue-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{doc.filename}</p>
+                          <p className="text-xs text-gray-500">{timeAgo(doc.created_at)}</p>
+                        </div>
+                        {fileUrl && (
+                          <a
+                            href={fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Download"
+                            className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors flex-shrink-0"
+                          >
+                            <Download className="w-4 h-4" />
+                          </a>
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{doc.filename}</p>
-                        <p className="text-xs text-gray-500">{timeAgo(doc.created_at)}</p>
-                      </div>
-                    </div>
-                  ))
+                    )
+                  })
                 )}
               </div>
             </div>
@@ -413,6 +455,33 @@ export default function CoursePage() {
           </div>
         </div>
       </main>
+
+      {/* Upgrade modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 w-full max-w-sm mx-4 p-8 flex flex-col items-center text-center">
+            <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
+              <Brain className="w-6 h-6 text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Free plan limit reached</h2>
+            <p className="text-sm text-gray-500 mb-6">
+              Free accounts can upload 1 document per course. Upgrade to Pro for unlimited uploads across all courses.
+            </p>
+            <Link
+              href="/upgrade"
+              className="w-full py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors text-center"
+            >
+              Upgrade to Pro
+            </Link>
+            <button
+              onClick={() => setShowUpgradeModal(false)}
+              className="mt-3 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

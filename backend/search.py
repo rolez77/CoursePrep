@@ -1,4 +1,5 @@
 import os
+import re
 from dotenv import load_dotenv
 from supabase import create_client
 import anthropic
@@ -50,21 +51,27 @@ async def generate_syllabus_summary(course_id: int):
         messages=[
             {
                 "role": "user",
-                "content": f"""Based on the following course material, write a clear and concise course summary covering:
-                - What the course is about
-                - Main topics covered
-                - Key learning objectives
-                - Any notable requirements or expectations
+                "content": f"""Extract the following information from this course syllabus and return ONLY a valid JSON object with no other text:
 
-                Keep it to 3-4 short paragraphs. Write it for a student deciding whether to use this course's materials.
+{{
+  "professor": "professor name or null",
+  "days": "lecture days (e.g. Mon/Wed/Fri) or null",
+  "topics": ["topic 1", "topic 2"],
+  "homeworks": "homework description or null",
+  "exams": "exam description or null"
+}}
 
-                Course material:
-                {context}"""
+If a field cannot be found in the materials, use null. Topics should be a concise list of the main course topics (up to 8).
+
+Course material:
+{context}"""
             }
         ]
     )
 
-    summary = message.content[0].text
+    raw = message.content[0].text.strip()
+    json_match = re.search(r'\{.*\}', raw, re.DOTALL)
+    summary = json_match.group(0) if json_match else raw
 
     supabase.table("courses").update({"syllabus_summary": summary}).eq("id", course_id).execute()
 

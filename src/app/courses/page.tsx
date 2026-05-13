@@ -82,6 +82,7 @@ export default function Courses() {
   }
 
   async function handleDeleteCourse(id: number) {
+    await supabase.from("documents").delete().eq("course_id", id)
     await supabase.from("courses").delete().eq("id", id)
     fetchCourses(user.id)
   }

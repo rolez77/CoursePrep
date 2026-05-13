@@ -1,10 +1,10 @@
-// src/app/upgrade/page.tsx
 "use client"
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/app/lib/supabase"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { Brain, Bell, User, Menu, Check, Zap } from "lucide-react"
 
 export default function Upgrade() {
   const [user, setUser] = useState<any>(null)
@@ -33,7 +33,6 @@ export default function Upgrade() {
   async function handleUpgrade() {
     if (!user) return
     setLoading(true)
-
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/create-checkout-session`, {
         method: "POST",
@@ -49,91 +48,117 @@ export default function Upgrade() {
 
   if (!user) return null
 
+  const freeFeatures = [
+    "1 document upload",
+    "20 AI questions per day",
+    "5 quiz questions per quiz",
+    "Public course search",
+  ]
+
+  const proFeatures = [
+    "Unlimited uploads",
+    "Unlimited AI questions",
+    "Unlimited quiz questions",
+    "Professor-style exam prep",
+    "Spaced repetition",
+    "Priority support",
+  ]
+
   return (
-    <main style={{ background: "#F5F0E8", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 48px", borderBottom: "1px solid rgba(26,22,18,0.12)" }}>
-        <Link href="/" style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px", fontWeight: 700, color: "#1A1612", textDecoration: "none" }}>
-          Course<span style={{ color: "#C8441A" }}>Prep</span>
-        </Link>
-        <Link href="/dashboard" style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}>← Dashboard</Link>
-      </nav>
-
-      <div style={{ flex: 1, maxWidth: "760px", margin: "0 auto", width: "100%", padding: "48px" }}>
-
-        {/* Header */}
-        <div style={{ marginBottom: "48px", textAlign: "center" }}>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#C8441A", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-            <span style={{ display: "inline-block", width: "24px", height: "1px", background: "#C8441A" }}></span>
-            Pricing
-            <span style={{ display: "inline-block", width: "24px", height: "1px", background: "#C8441A" }}></span>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-8">
+              <Link href="/dashboard" className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-linear-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Brain className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-xl font-bold text-gray-900">CoursePrep</span>
+              </Link>
+              <nav className="hidden md:flex items-center gap-6">
+                <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 text-sm">Dashboard</Link>
+                <Link href="/courses" className="text-gray-600 hover:text-gray-900 text-sm">My Courses</Link>
+                <Link href="/search" className="text-gray-600 hover:text-gray-900 text-sm">Discover</Link>
+              </nav>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
+                <Bell className="w-5 h-5" />
+              </button>
+              <Link href="/profile" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
+                <User className="w-5 h-5" />
+              </Link>
+              <button className="md:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
+                <Menu className="w-5 h-5" />
+              </button>
+            </div>
           </div>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "48px", fontWeight: 700, color: "#1A1612", lineHeight: 1.1, letterSpacing: "-0.02em", margin: "0 0 16px" }}>
-            Upgrade to <em style={{ fontStyle: "italic", color: "#C8441A" }}>Pro</em>
-          </h1>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "16px", color: "#8C8070", margin: 0 }}>
-            Unlock everything CoursePrep has to offer
-          </p>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        {/* Hero */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-full text-xs font-medium text-blue-600 mb-4">
+            <Zap className="w-3.5 h-3.5" />
+            Upgrade your plan
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Simple, transparent pricing</h1>
+          <p className="text-gray-500 text-base">Unlock everything CoursePrep has to offer.</p>
         </div>
 
         {/* Plans */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "48px" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
 
           {/* Free */}
-          <div style={{ border: "1px solid rgba(26,22,18,0.12)", borderRadius: "8px", padding: "32px", background: "rgba(26,22,18,0.02)" }}>
-            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", letterSpacing: "0.1em", textTransform: "uppercase", margin: "0 0 16px" }}>Free</p>
-            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "36px", fontWeight: 700, color: "#1A1612", margin: "0 0 4px" }}>$0</p>
-            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "12px", color: "#8C8070", margin: "0 0 32px" }}>forever</p>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {[
-                "1 course",
-                "5 uploads total",
-                "20 questions per day",
-                "5 quiz questions per quiz",
-                "Public course search",
-              ].map((feature) => (
-                <div key={feature} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <span style={{ color: "#8C8070", fontSize: "14px" }}>—</span>
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color: "#8C8070" }}>{feature}</span>
-                </div>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Free</p>
+            <div className="mb-6">
+              <span className="text-4xl font-bold text-gray-900">$0</span>
+              <span className="text-sm text-gray-400 ml-1">/ month</span>
+            </div>
+            <ul className="space-y-3 mb-8">
+              {freeFeatures.map((f) => (
+                <li key={f} className="flex items-center gap-3 text-sm text-gray-500">
+                  <span className="w-4 h-4 shrink-0 text-gray-300">—</span>
+                  {f}
+                </li>
               ))}
+            </ul>
+            <div className="w-full py-2.5 text-center text-sm font-medium text-gray-400 bg-gray-50 border border-gray-200 rounded-lg">
+              Current plan
             </div>
           </div>
 
           {/* Pro */}
-          <div style={{ border: "2px solid #1A1612", borderRadius: "8px", padding: "32px", background: "#1A1612", position: "relative" }}>
-            <div style={{ position: "absolute", top: "-12px", left: "50%", transform: "translateX(-50%)", background: "#C8441A", color: "#F5F0E8", fontFamily: "'DM Mono', monospace", fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", padding: "4px 14px", borderRadius: "100px", whiteSpace: "nowrap" }}>
+          <div className="bg-gray-900 rounded-xl border border-gray-900 shadow-sm p-8 relative">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
               Most popular
             </div>
-            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", letterSpacing: "0.1em", textTransform: "uppercase", margin: "0 0 16px" }}>Pro</p>
-            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "36px", fontWeight: 700, color: "#F5F0E8", margin: "0 0 4px" }}>$5</p>
-            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "12px", color: "#8C8070", margin: "0 0 32px" }}>per month</p>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "32px" }}>
-              {[
-                "Unlimited courses",
-                "Unlimited uploads",
-                "Unlimited questions",
-                "Unlimited quiz questions",
-                "Professor-style exam prep",
-                "Spaced repetition",
-              ].map((feature) => (
-                <div key={feature} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <span style={{ color: "#C8441A", fontSize: "14px" }}>✓</span>
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color: "#F5F0E8" }}>{feature}</span>
-                </div>
-              ))}
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Pro</p>
+            <div className="mb-6">
+              <span className="text-4xl font-bold text-white">$5</span>
+              <span className="text-sm text-gray-400 ml-1">/ month</span>
             </div>
-
+            <ul className="space-y-3 mb-8">
+              {proFeatures.map((f) => (
+                <li key={f} className="flex items-center gap-3 text-sm text-white">
+                  <Check className="w-4 h-4 shrink-0 text-blue-400" />
+                  {f}
+                </li>
+              ))}
+            </ul>
             {isPro ? (
-              <div style={{ textAlign: "center", padding: "14px", background: "rgba(255,255,255,0.1)", borderRadius: "4px" }}>
-                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "12px", color: "#F5F0E8", margin: 0, letterSpacing: "0.08em" }}>✓ You're on Pro</p>
+              <div className="w-full py-2.5 text-center text-sm font-medium text-blue-400 bg-white/10 rounded-lg">
+                ✓ You're on Pro
               </div>
             ) : (
               <button
                 onClick={handleUpgrade}
                 disabled={loading}
-                style={{ width: "100%", padding: "16px", background: "#C8441A", color: "#F5F0E8", fontFamily: "'DM Mono', monospace", fontSize: "12px", letterSpacing: "0.1em", textTransform: "uppercase", border: "none", borderRadius: "4px", cursor: "pointer", opacity: loading ? 0.6 : 1 }}
+                className="w-full py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading ? "Redirecting..." : "Upgrade to Pro →"}
               </button>
@@ -142,15 +167,10 @@ export default function Upgrade() {
         </div>
 
         {/* Trust line */}
-        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070", textAlign: "center", letterSpacing: "0.05em" }}>
+        <p className="text-center text-xs text-gray-400">
           Secure payments via Stripe · Cancel anytime · No hidden fees
         </p>
-      </div>
-
-      <footer style={{ padding: "20px 48px", borderTop: "1px solid rgba(26,22,18,0.12)", display: "flex", justifyContent: "space-between" }}>
-        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070" }}>© 2026 CoursePrep</span>
-        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#8C8070" }}>courseprep.xyz</span>
-      </footer>
-    </main>
+      </main>
+    </div>
   )
 }
