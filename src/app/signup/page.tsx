@@ -64,11 +64,11 @@ export default function SignUp() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full name</label>
                 <input
                   type="text"
-                  placeholder="Alex Martinez"
+                  placeholder="John Pork"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900! rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -81,7 +81,7 @@ export default function SignUp() {
                   value={university}
                   onChange={(e) => setUniversity(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border text-gray-900! border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -92,7 +92,7 @@ export default function SignUp() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border text-gray-900! border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -103,7 +103,7 @@ export default function SignUp() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border text-gray-900! border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -128,6 +128,13 @@ export default function SignUp() {
             <Link href="/login" className="font-medium text-blue-600 hover:text-blue-700">
               Sign in
             </Link>
+          </p>
+
+          <p className="text-center text-xs text-gray-400 mt-4">
+            By creating an account you agree to our{" "}
+            <Link href="/terms" className="underline hover:text-gray-600">Terms of Service</Link>
+            {" "}and{" "}
+            <Link href="/privacy" className="underline hover:text-gray-600">Privacy Policy</Link>.
           </p>
         </div>
       </div>

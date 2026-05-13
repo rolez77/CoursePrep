@@ -55,11 +55,12 @@ export default function Courses() {
 
     const withCounts = await Promise.all(
       data.map(async (course) => {
-        const { count } = await supabase
+        const { data: docs } = await supabase
           .from("documents")
-          .select("id", { count: "exact", head: true })
+          .select("metadata")
           .eq("course_id", course.id)
-        return { ...course, doc_count: count ?? 0 }
+        const uniqueFiles = new Set(docs?.map((d) => d.metadata?.filename).filter(Boolean))
+        return { ...course, doc_count: uniqueFiles.size }
       })
     )
     setCourses(withCounts)
@@ -169,7 +170,7 @@ export default function Courses() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Data Structures & Algorithms"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-900! bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -179,7 +180,7 @@ export default function Courses() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="e.g. COP 3530 — Fall 2026"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border text-gray-900! border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -189,7 +190,7 @@ export default function Courses() {
                   value={university}
                   onChange={(e) => setUniversity(e.target.value)}
                   placeholder="e.g. University of Florida"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border text-gray-900! border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>

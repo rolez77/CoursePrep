@@ -167,9 +167,6 @@ export default function SearchPage() {
                     {course.description && (
                       <p className="text-sm text-gray-600 mb-2 line-clamp-2">{course.description}</p>
                     )}
-                    {course.syllabus_summary && (
-                      <p className="text-sm text-gray-500 line-clamp-2">{course.syllabus_summary}</p>
-                    )}
                   </div>
                   <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-gray-50 group-hover:bg-blue-50 border border-gray-200 group-hover:border-blue-200 flex items-center justify-center transition-all">
                     <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" />

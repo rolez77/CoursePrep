@@ -384,7 +384,7 @@ export default function Profile() {
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="Your full name"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border text-gray-900! border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -394,7 +394,7 @@ export default function Profile() {
                         value={university}
                         onChange={(e) => setUniversity(e.target.value)}
                         placeholder="Your university"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border text-gray-900! border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -403,7 +403,7 @@ export default function Profile() {
                         type="text"
                         value={user.email}
                         disabled
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+                        className="w-full px-4 py-3 border text-gray-500! border-gray-200 rounded-lg text-sm bg-gray-50 cursor-not-allowed"
                       />
                     </div>
                     <div className="flex items-center gap-4">

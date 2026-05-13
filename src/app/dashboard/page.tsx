@@ -100,11 +100,12 @@ function DashboardContent() {
       if (coursesRes.data) {
         coursesWithCounts = await Promise.all(
           coursesRes.data.map(async (course) => {
-            const { count } = await supabase
+            const { data: docs } = await supabase
               .from("documents")
-              .select("id", { count: "exact", head: true })
+              .select("metadata")
               .eq("course_id", course.id)
-            return { ...course, doc_count: count ?? 0 }
+            const uniqueFiles = new Set(docs?.map((d) => d.metadata?.filename).filter(Boolean))
+            return { ...course, doc_count: uniqueFiles.size }
           })
         )
         setCourses(coursesWithCounts)

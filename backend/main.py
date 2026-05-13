@@ -44,9 +44,14 @@ async def upload_file(file: UploadFile = File(...), user_id: str = Form(...), co
     
 
     profile = supabase.table("profiles").select("is_pro, upload_count").eq("id", user_id).single().execute()
-    
+
     if not profile.data:
         raise HTTPException(status_code=404, detail="User not found")
+
+    if course_id:
+        course = supabase.table("courses").select("user_id").eq("id", course_id).single().execute()
+        if not course.data or course.data.get("user_id") != user_id:
+            raise HTTPException(status_code=403, detail="You do not have permission to upload to this course")
     
     is_pro = profile.data.get("is_pro", False)
     upload_count = profile.data.get("upload_count", 0)
