@@ -9,6 +9,8 @@ import {
   Bell, Shield, Palette, Globe, ChevronRight, Brain, FileText,
   Clock, Target, ArrowLeft, Edit,
 } from "lucide-react"
+import UniversityInput from "@/app/components/UniversityDropdown"
+import { useTheme } from "@/app/components/ThemeProvider"
 
 type Profile = {
   full_name: string | null
@@ -54,6 +56,7 @@ export default function Profile() {
   const [cancelLoading, setCancelLoading] = useState(false)
   const supabase = createClient()
   const router = useRouter()
+  const { theme, toggleTheme } = useTheme()
 
   useEffect(() => {
     async function load() {
@@ -133,7 +136,46 @@ export default function Profile() {
     router.push("/login")
   }
 
-  if (loading || !user) return null
+  if (loading || !user) return (
+    <div className="min-h-screen bg-gray-50 animate-pulse">
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center h-16 gap-4">
+            <div className="w-9 h-9 bg-gray-200 rounded-lg" />
+            <div className="w-8 h-8 bg-linear-to-br from-blue-500 to-purple-600 rounded-lg" />
+            <div className="h-5 w-28 bg-gray-200 rounded" />
+          </div>
+        </div>
+      </header>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <div className="flex items-center gap-6">
+            <div className="w-24 h-24 bg-gray-200 rounded-full flex-shrink-0" />
+            <div className="flex-1 space-y-3">
+              <div className="h-8 w-48 bg-gray-200 rounded" />
+              <div className="h-4 w-64 bg-gray-200 rounded" />
+              <div className="h-4 w-40 bg-gray-200 rounded" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="border-b border-gray-200 flex gap-2 px-2">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-12 w-24 bg-gray-100 rounded my-2" />
+            ))}
+          </div>
+          <div className="p-8">
+            <div className="h-6 w-40 bg-gray-200 rounded mb-6" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-gray-50 rounded-lg p-6 h-32" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
 
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -389,13 +431,20 @@ export default function Profile() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">University</label>
-                      <input
-                        type="text"
-                        value={university}
-                        onChange={(e) => setUniversity(e.target.value)}
-                        placeholder="Your university"
-                        className="w-full px-4 py-3 border text-gray-900! border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
+                        <UniversityInput
+                            value={university}
+                            onChange={setUniversity}
+                            style={{
+                                width: "100%",
+                                padding: "0.75rem 1rem",
+                                border: "1px solid #D1D5DB",
+                                borderRadius: "0.5rem",
+                                fontSize: "0.875rem",
+                                color: "#111827",
+                                outline: "none",
+                                backgroundColor: "#ffffff"
+                            }}
+                            />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -455,7 +504,6 @@ export default function Profile() {
                   <div className="space-y-2 max-w-lg">
                     {[
                       { label: "Notifications", icon: Bell },
-                      { label: "Appearance", icon: Palette },
                       { label: "Language", icon: Globe },
                     ].map((item, index) => (
                       <button
@@ -469,6 +517,16 @@ export default function Profile() {
                         <ChevronRight className="w-5 h-5 text-gray-400" />
                       </button>
                     ))}
+                    <button
+                      onClick={toggleTheme}
+                      className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Palette className="w-5 h-5 text-gray-600" />
+                        <span className="font-medium text-gray-900 text-sm">Appearance</span>
+                      </div>
+                      <span className="text-sm text-gray-500 capitalize">{theme}</span>
+                    </button>
                   </div>
                 </div>
 

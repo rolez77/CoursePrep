@@ -1,22 +1,47 @@
-// src/app/layout.tsx
 import type { Metadata } from "next"
+import { Playfair_Display, DM_Mono, DM_Sans } from "next/font/google"
 import "./globals.css"
+import { ThemeProvider } from "@/app/components/ThemeProvider"
+
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-playfair",
+  display: "swap",
+})
+
+const dmMono = DM_Mono({
+  subsets: ["latin"],
+  weight: ["300", "400"],
+  variable: "--font-dm-mono",
+  display: "swap",
+})
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500"],
+  variable: "--font-dm-sans",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   title: "CoursePrep",
   description: "AI-powered study tool",
-  icons:{
+  icons: {
     icon: "/favicon.ico",
-  }
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${playfairDisplay.variable} ${dmMono.variable} ${dmSans.variable}`}>
       <head>
-        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}}catch(e){}})();` }} />
       </head>
-      <body>{children}</body>
+      <body className={dmSans.className}>
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   )
 }

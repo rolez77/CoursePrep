@@ -53,25 +53,32 @@ export default function Courses() {
       .order("created_at", { ascending: false })
     if (!data) return
 
-    const withCounts = await Promise.all(
-      data.map(async (course) => {
-        const { data: docs } = await supabase
-          .from("documents")
-          .select("metadata")
-          .eq("course_id", course.id)
-        const uniqueFiles = new Set(docs?.map((d) => d.metadata?.filename).filter(Boolean))
-        return { ...course, doc_count: uniqueFiles.size }
-      })
-    )
-    setCourses(withCounts)
+    const courseIds = data.map((c) => c.id)
+    const { data: allDocs } = await supabase
+      .from("documents")
+      .select("course_id, metadata")
+      .in("course_id", courseIds)
+
+    const docCountMap: Record<number, Set<string>> = {}
+    for (const doc of allDocs ?? []) {
+      const filename = doc.metadata?.filename
+      if (!filename) continue
+      if (!docCountMap[doc.course_id]) docCountMap[doc.course_id] = new Set()
+      docCountMap[doc.course_id].add(filename)
+    }
+
+    setCourses(data.map((course) => ({
+      ...course,
+      doc_count: docCountMap[course.id]?.size ?? 0,
+    })))
   }
 
   async function handleCreateCourse() {
-    if (!name.trim() || !user) return
+    if (!name.trim() || !description.trim() || !university.trim() || !user) return
     setCreating(true)
     const { error } = await supabase
       .from("courses")
-      .insert({ name, description, university: university || null, user_id: user.id })
+      .insert({ name, description, university, user_id: user.id })
     if (!error) {
       setName("")
       setDescription("")
@@ -98,7 +105,32 @@ export default function Courses() {
     fetchCourses(user.id)
   }
 
-  if (!user) return null
+  if (!user) return (
+    <div className="min-h-screen bg-gray-50 animate-pulse">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center h-16 gap-8">
+            <div className="w-8 h-8 bg-linear-to-br from-blue-500 to-purple-600 rounded-lg" />
+            <div className="h-5 w-28 bg-gray-200 rounded" />
+          </div>
+        </div>
+      </header>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <div className="h-8 w-40 bg-gray-200 rounded mb-2" />
+            <div className="h-4 w-24 bg-gray-200 rounded" />
+          </div>
+          <div className="h-9 w-32 bg-gray-200 rounded-lg" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 h-44" />
+          ))}
+        </div>
+      </main>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -174,7 +206,7 @@ export default function Courses() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-gray-400">(optional)</span></label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={description}
@@ -184,7 +216,7 @@ export default function Courses() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">University <span className="text-gray-400">(optional)</span></label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">University <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={university}
@@ -197,7 +229,7 @@ export default function Courses() {
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
               <button
                 onClick={handleCreateCourse}
-                disabled={!name.trim() || creating}
+                disabled={!name.trim() || !description.trim() || !university.trim() || creating}
                 className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {creating ? "Creating..." : "Create Course"}

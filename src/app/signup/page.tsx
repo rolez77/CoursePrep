@@ -5,6 +5,7 @@ import { createClient } from "@/app/lib/supabase"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Brain } from "lucide-react"
+import UniversityInput from "@/app/components/UniversityDropdown"
 
 export default function SignUp() {
   const [email, setEmail] = useState("")
@@ -19,6 +20,8 @@ export default function SignUp() {
   async function handleSignUp() {
     setLoading(true)
     setError("")
+
+    if (!university) { setError("Please select your university."); setLoading(false); return }
 
     const check = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/can-signup`)
     const {allowed} = await check.json()
@@ -81,17 +84,21 @@ export default function SignUp() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  University <span className="text-gray-400 font-normal">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="University of Florida"
+                <label className="block text-sm font-medium text-gray-700 mb-1">University</label>
+                <UniversityInput
                   value={university}
-                  onChange={(e) => setUniversity(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="w-full px-4 py-3 border text-gray-900! border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                  onChange={setUniversity}
+                    style={{
+                        width: "100%",
+                        padding: "0.75rem 1rem",
+                        border: "1px solid #D1D5DB",
+                        borderRadius: "0.5rem",
+                        fontSize: "0.875rem",
+                        color: "#111827",
+                        outline: "none",
+                        backgroundColor: "#ffffff"
+                    }}
+                     />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
