@@ -2,6 +2,7 @@
 
 import { universities } from "@/app/lib/universities"
 import { useEffect, useState, useRef } from "react"
+import { useTheme } from "@/app/components/ThemeProvider"
 interface Props{
     value: string
     onChange: (value: string) => void
@@ -12,6 +13,8 @@ export default function UniversityDropdown({ value, onChange, style }: Props) {
     const[open, setOpen] = useState(false)
     const[query, setQuery] = useState(value)
     const containerRef = useRef<HTMLDivElement>(null)
+    const { theme } = useTheme()
+    const isDark = theme === "dark"
 
     const filtered = universities.filter(u => u.toLowerCase().includes(query.toLowerCase())).slice(0, 8)
 
@@ -46,8 +49,8 @@ export default function UniversityDropdown({ value, onChange, style }: Props) {
           top: "100%",
           left: 0,
           right: 0,
-          background: "#ffffff",
-          border: "1px solid #D1D5DB",
+          background: isDark ? "#1f2937" : "#ffffff",
+          border: `1px solid ${isDark ? "#4b5563" : "#D1D5DB"}`,
           borderTop: "none",
           borderRadius: "0 0 0.5rem 0.5rem",
           zIndex: 50,
@@ -66,11 +69,11 @@ export default function UniversityDropdown({ value, onChange, style }: Props) {
               style={{
                 padding: "10px 16px",
                 fontSize: "14px",
-                color: "#111827",
+                color: isDark ? "#f9fafb" : "#111827",
                 cursor: "pointer",
-                borderBottom: "1px solid #F3F4F6",
+                borderBottom: `1px solid ${isDark ? "#374151" : "#F3F4F6"}`,
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = "#EFF6FF")}
+              onMouseEnter={e => (e.currentTarget.style.background = isDark ? "#374151" : "#EFF6FF")}
               onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
             >
               {uni}
@@ -85,8 +88,8 @@ export default function UniversityDropdown({ value, onChange, style }: Props) {
           top: "100%",
           left: 0,
           right: 0,
-          background: "#ffffff",
-          border: "1px solid #D1D5DB",
+          background: isDark ? "#1f2937" : "#ffffff",
+          border: `1px solid ${isDark ? "#4b5563" : "#D1D5DB"}`,
           borderTop: "none",
           borderRadius: "0 0 0.5rem 0.5rem",
           zIndex: 50,

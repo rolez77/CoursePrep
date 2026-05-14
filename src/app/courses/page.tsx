@@ -203,7 +203,7 @@ export default function Courses() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Data Structures & Algorithms"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-900! bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -213,7 +213,7 @@ export default function Courses() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="e.g. COP 3530 — Fall 2026"
-                  className="w-full px-4 py-3 border text-gray-900! border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border text-gray-900 border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -227,9 +227,7 @@ export default function Courses() {
                             border: "1px solid #D1D5DB",
                             borderRadius: "0.5rem",
                             fontSize: "0.875rem",
-                            color: "#111827",
                             outline: "none",
-                            backgroundColor: "#ffffff"
                         }}
                     />
               </div>
