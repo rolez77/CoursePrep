@@ -7,6 +7,7 @@ import Link from "next/link"
 import {
   Brain, Bell, User, Menu, Plus, X, FileText, Globe, Lock, Trash2,
 } from "lucide-react"
+import UniversityInput from "@/app/components/UniversityDropdown"
 
 interface Course {
   id: number
@@ -217,13 +218,20 @@ export default function Courses() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">University <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={university}
-                  onChange={(e) => setUniversity(e.target.value)}
-                  placeholder="e.g. University of Florida"
-                  className="w-full px-4 py-3 border text-gray-900! border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                    <UniversityInput
+                            value={university}
+                            onChange={setUniversity}
+                            style={{
+                            width: "100%",
+                            padding: "0.75rem 1rem",
+                            border: "1px solid #D1D5DB",
+                            borderRadius: "0.5rem",
+                            fontSize: "0.875rem",
+                            color: "#111827",
+                            outline: "none",
+                            backgroundColor: "#ffffff"
+                        }}
+                    />
               </div>
             </div>
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
