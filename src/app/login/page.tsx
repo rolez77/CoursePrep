@@ -99,6 +99,10 @@ export default function Login() {
             <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-700">
               Sign up for free
             </Link>
+            <br />
+            <Link href="/forgot-password" className="font-medium text-blue-600 hover:text-blue-700">
+              Forgot your password?
+            </Link>
           </p>
         </div>
       </div>

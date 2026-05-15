@@ -14,6 +14,7 @@ interface Document {
   filename: string
   created_at: string
   file_url?: string
+  document_type?: string
 }
 
 interface QuizQuestion {
@@ -39,6 +40,7 @@ export default function CoursePage() {
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
+  const [docType, setDocType] = useState<"syllabus" | "other">("other")
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [question, setQuestion] = useState("")
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([])
@@ -103,7 +105,7 @@ export default function CoursePage() {
         const filename = d.metadata?.filename
         if (!filename || seen.has(filename)) continue
         seen.add(filename)
-        unique.push({ filename, created_at: d.created_at, file_url: d.metadata?.file_url })
+        unique.push({ filename, created_at: d.created_at, file_url: d.metadata?.file_url, document_type: d.metadata?.document_type || "other" })
       }
       setDocuments(unique)
     }
@@ -113,6 +115,13 @@ export default function CoursePage() {
     const file = e.target.files?.[0]
     if (!file || !user) return
 
+    const hasSyllabus = documents.some(d => d.document_type === "syllabus")
+    if (docType === "syllabus" && hasSyllabus) {
+      setUploadError("A syllabus has already been uploaded for this course.")
+      if (fileInputRef.current) fileInputRef.current.value = ""
+      return
+    }
+
     setUploading(true)
     setUploadError(null)
     setUploadSuccess(null)
@@ -121,6 +130,7 @@ export default function CoursePage() {
     formData.append("file", file)
     formData.append("user_id", user.id)
     formData.append("course_id", String(id))
+    formData.append("document_type", docType)
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
@@ -129,6 +139,7 @@ export default function CoursePage() {
       })
       const data = await res.json()
       if (res.status === 403) { setShowUpgradeModal(true); return }
+      if (res.status === 409) { setUploadError(data.detail || "A syllabus already exists for this course."); return }
       if (!res.ok) throw new Error(data.detail || "Upload failed")
       setUploadSuccess(`"${file.name}" uploaded successfully.`)
       fetchDocuments()
@@ -426,35 +437,82 @@ export default function CoursePage() {
                   <h2 className="font-semibold text-gray-900">Upload Materials</h2>
                 </div>
                 <div className="p-6">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleUpload}
-                    className="hidden"
-                    id="file-upload"
-                  />
-                  <label
-                    htmlFor="file-upload"
-                    className={`flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg p-6 cursor-pointer transition-colors ${
-                      uploading
-                        ? "border-blue-300 bg-blue-50 cursor-wait"
-                        : "border-gray-300 hover:border-blue-400 hover:bg-blue-50"
-                    }`}
-                  >
-                    {uploading ? (
+                  {/* Document type selector */}
+                  <div className="mb-4">
+                    <p className="text-xs font-medium text-gray-700 mb-2">Document type</p>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="docType"
+                          value="other"
+                          checked={docType === "other"}
+                          onChange={() => setDocType("other")}
+                          className="accent-blue-600"
+                        />
+                        <span className="text-xs text-gray-700">Lecture notes / Other</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="docType"
+                          value="syllabus"
+                          checked={docType === "syllabus"}
+                          onChange={() => setDocType("syllabus")}
+                          className="accent-blue-600"
+                        />
+                        <span className="text-xs text-gray-700">Syllabus</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const hasSyllabus = documents.some(d => d.document_type === "syllabus")
+                    const syllabusBlocked = docType === "syllabus" && hasSyllabus
+                    return (
                       <>
-                        <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-2" />
-                        <span className="text-sm text-blue-600 font-medium">Uploading & processing...</span>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".pdf"
+                          onChange={handleUpload}
+                          className="hidden"
+                          id="file-upload"
+                          disabled={syllabusBlocked || uploading}
+                        />
+                        <label
+                          htmlFor="file-upload"
+                          className={`flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg p-6 transition-colors ${
+                            uploading
+                              ? "border-blue-300 bg-blue-50 cursor-wait"
+                              : syllabusBlocked
+                              ? "border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
+                              : "cursor-pointer border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+                          }`}
+                        >
+                          {uploading ? (
+                            <>
+                              <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-2" />
+                              <span className="text-sm text-blue-600 font-medium">Uploading & processing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                              <span className="text-sm font-medium text-gray-700">Click to upload PDF</span>
+                              <span className="text-xs text-gray-500 mt-1">
+                                {docType === "syllabus" ? "Syllabus PDF" : "Lecture notes, textbooks, etc."}
+                              </span>
+                            </>
+                          )}
+                        </label>
+                        {syllabusBlocked && (
+                          <div className="mt-3 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg">
+                            <span className="text-amber-700 text-xs">A syllabus has already been uploaded for this course.</span>
+                          </div>
+                        )}
                       </>
-                    ) : (
-                      <>
-                        <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                        <span className="text-sm font-medium text-gray-700">Click to upload PDF</span>
-                        <span className="text-xs text-gray-500 mt-1">Lecture notes, textbooks, syllabi</span>
-                      </>
-                    )}
-                  </label>
+                    )
+                  })()}
 
                   {uploadSuccess && (
                     <div className="mt-3 flex items-start gap-2 px-3 py-2.5 bg-green-50 border border-green-200 rounded-lg">
@@ -527,7 +585,12 @@ export default function CoursePage() {
                           <FileText className="w-4 h-4 text-blue-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{doc.filename}</p>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{doc.filename}</p>
+                            {doc.document_type === "syllabus" && (
+                              <span className="shrink-0 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">Syllabus</span>
+                            )}
+                          </div>
                           <p className="text-xs text-gray-500">{timeAgo(doc.created_at)}</p>
                         </div>
                         {fileUrl && (

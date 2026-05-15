@@ -47,7 +47,7 @@ def _upload_to_storage(file_bytes: bytes, filename: str, user_id: str, course_id
     return supabase.storage.from_(BUCKET).get_public_url(path)
 
 
-async def ingest_pdf(file_bytes: bytes, filename: str, user_id: str, course_id: str = None):
+async def ingest_pdf(file_bytes: bytes, filename: str, user_id: str, course_id: str = None, document_type: str = "other"):
     file_url = _upload_to_storage(file_bytes, filename, user_id, course_id or "global")
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
@@ -69,6 +69,7 @@ async def ingest_pdf(file_bytes: bytes, filename: str, user_id: str, course_id: 
                 "filename": filename,
                 "page": chunk.metadata.get("page", 0),
                 "file_url": file_url,
+                "document_type": document_type,
             }
         }).execute()
     os.unlink(tmp_path)

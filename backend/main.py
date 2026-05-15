@@ -40,8 +40,7 @@ def root():
     return {"message": "Backend is running"}
 
 @app.post("/upload")
-async def upload_file(file: UploadFile = File(...), user_id: str = Form(...), course_id: str = Form(None)):
-    
+async def upload_file(file: UploadFile = File(...), user_id: str = Form(...), course_id: str = Form(None), document_type: str = Form("other")):
 
     profile = supabase.table("profiles").select("is_pro, upload_count").eq("id", user_id).single().execute()
 
@@ -52,7 +51,13 @@ async def upload_file(file: UploadFile = File(...), user_id: str = Form(...), co
         course = supabase.table("courses").select("user_id").eq("id", course_id).single().execute()
         if not course.data or course.data.get("user_id") != user_id:
             raise HTTPException(status_code=403, detail="You do not have permission to upload to this course")
-    
+
+    if document_type == "syllabus" and course_id:
+        existing = supabase.table("documents").select("metadata").eq("course_id", course_id).execute()
+        has_syllabus = any(d.get("metadata", {}).get("document_type") == "syllabus" for d in existing.data)
+        if has_syllabus:
+            raise HTTPException(status_code=409, detail="A syllabus has already been uploaded for this course.")
+
     is_pro = profile.data.get("is_pro", False)
     upload_count = profile.data.get("upload_count", 0)
 
@@ -60,7 +65,14 @@ async def upload_file(file: UploadFile = File(...), user_id: str = Form(...), co
         raise HTTPException(status_code=403, detail="Free plan limit reached. Upgrade to Pro for unlimited uploads.")
 
     contents = await file.read()
-    chunk_count = await ingest_pdf(contents, file.filename, user_id, course_id)
+    decoded = contents.decode('utf-8', errors='ignore')
+
+    if isSyllabus(decoded) and course_id and document_type != "syllabus":
+        existing = supabase.table("documents").select("metadata").eq("course_id", course_id).execute()
+        if any(d.get("metadata", {}).get("document_type") == "syllabus" for d in existing.data):
+            raise HTTPException(status_code=409, detail="A syllabus has already been uploaded for this course.")
+
+    chunk_count = await ingest_pdf(contents, file.filename, user_id, course_id, document_type)
 
     supabase.table("profiles").update(
         {"upload_count": upload_count + 1}
@@ -151,3 +163,12 @@ async def can_signup():
     user_count = res.count
     MAX_USERS = 100
     return {"allowed": user_count < MAX_USERS, "count": user_count}
+
+
+
+def isSyllabus(documentContents):
+    keyword = 'syllabus'
+
+    if isinstance(documentContents,str):
+        return keyword in documentContents.lower()
+    return any(keyword in chunk.lower() for chunk in documentContents)
