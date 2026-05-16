@@ -10,6 +10,11 @@ import os
 import json
 import stripe
 from supabase import create_client
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+
 
 load_dotenv()
 
@@ -35,11 +40,18 @@ app.add_middleware(
 )
 app.include_router(stripe_router)
 
+
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 @app.get("/")
 def root():
     return {"message": "Backend is running"}
 
 @app.post("/upload")
+@limiter.limit("5/minute")
 async def upload_file(file: UploadFile = File(...), user_id: str = Form(...), course_id: str = Form(None), document_type: str = Form("other")):
 
     profile = supabase.table("profiles").select("is_pro, upload_count").eq("id", user_id).single().execute()
@@ -84,11 +96,13 @@ async def upload_file(file: UploadFile = File(...), user_id: str = Form(...), co
     }
 
 @app.post("/chat")
+@limiter.limit("20/minute")
 async def chat(question: str, user_id: str, course_id: str = None):
     response = await answer_question(question, user_id, course_id)
     return {"response": response}
 
 @app.post("/quiz")
+@limiter.limit("5/minute")
 async def quiz_endpoint(topic: str, user_id: str, num_questions: int = 5, course_id: str = None):
     quiz = await generate_quiz(topic, user_id, num_questions, course_id)
     return {"quiz": quiz}
@@ -172,3 +186,5 @@ def isSyllabus(documentContents):
     if isinstance(documentContents,str):
         return keyword in documentContents.lower()
     return any(keyword in chunk.lower() for chunk in documentContents)
+
+
