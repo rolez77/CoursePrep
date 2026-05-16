@@ -9,6 +9,7 @@ import {
   Send, Globe, Lock, Loader2, X, BookOpen, Download,
   HelpCircle, CheckCircle2, XCircle,
 } from "lucide-react"
+import Navbar from "@/app/components/Navbar"
 
 interface Document {
   filename: string
@@ -42,6 +43,7 @@ export default function CoursePage() {
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
   const [docType, setDocType] = useState<"syllabus" | "other">("other")
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [upgradeModalMessage, setUpgradeModalMessage] = useState("Free accounts can upload 1 document per course. Upgrade to Pro for unlimited uploads across all courses.")
   const [question, setQuestion] = useState("")
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([])
   const [chatLoading, setChatLoading] = useState(false)
@@ -138,7 +140,7 @@ export default function CoursePage() {
         body: formData,
       })
       const data = await res.json()
-      if (res.status === 403) { setShowUpgradeModal(true); return }
+      if (res.status === 403) { setUpgradeModalMessage("Free accounts can upload 1 document per course. Upgrade to Pro for unlimited uploads across all courses."); setShowUpgradeModal(true); return }
       if (res.status === 409) { setUploadError(data.detail || "A syllabus already exists for this course."); return }
       if (!res.ok) throw new Error(data.detail || "Upload failed")
       setUploadSuccess(`"${file.name}" uploaded successfully.`)
@@ -165,6 +167,11 @@ export default function CoursePage() {
         { method: "POST" }
       )
       const data = await res.json()
+      if (res.status === 403) {
+        setUpgradeModalMessage(data.detail || "You've reached your daily question limit. Upgrade to Pro for unlimited questions.")
+        setShowUpgradeModal(true)
+        return
+      }
       setMessages((prev) => [...prev, { role: "assistant", content: data.response }])
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Something went wrong. Please try again." }])
@@ -191,6 +198,11 @@ export default function CoursePage() {
         { method: "POST" }
       )
       const data = await res.json()
+      if (res.status === 403) {
+        setUpgradeModalMessage(data.detail || "Free plan limit reached. Upgrade to Pro to generate longer quizzes.")
+        setShowUpgradeModal(true)
+        return
+      }
       if (!res.ok) throw new Error(data.detail || "Failed to generate quiz")
       setQuiz(data.quiz)
     } catch (err: any) {
@@ -248,36 +260,7 @@ export default function CoursePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-8">
-              <Link href="/dashboard" className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Brain className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-bold text-gray-900">CoursePrep</span>
-              </Link>
-              <nav className="hidden md:flex items-center gap-6">
-                <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 text-sm">Dashboard</Link>
-                <Link href="/courses" className="text-blue-600 font-medium text-sm">My Courses</Link>
-                <Link href="/search" className="text-gray-600 hover:text-gray-900 text-sm">Discover</Link>
-              </nav>
-            </div>
-            <div className="flex items-center gap-2">
-              <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
-                <Bell className="w-5 h-5" />
-              </button>
-              <Link href="/profile" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
-                <User className="w-5 h-5" />
-              </Link>
-              <button className="md:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
-                <Menu className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back + course header */}
@@ -753,7 +736,7 @@ export default function CoursePage() {
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">Free plan limit reached</h2>
             <p className="text-sm text-gray-500 mb-6">
-              Free accounts can upload 1 document per course. Upgrade to Pro for unlimited uploads across all courses.
+              {upgradeModalMessage}
             </p>
             <Link
               href="/upgrade"

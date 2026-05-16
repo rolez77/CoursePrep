@@ -8,6 +8,7 @@ import {
   BookOpen, Brain, FileText, Upload, Award, Clock,
   Users, Plus, Bell, User, Menu, X,
 } from "lucide-react"
+import Navbar from "../components/Navbar"
 
 type Profile = {
   full_name: string | null
@@ -204,36 +205,7 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-8">
-              <Link href="/dashboard" className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Brain className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-bold text-gray-900">CoursePrep</span>
-              </Link>
-              <nav className="hidden md:flex items-center gap-6">
-                <Link href="/dashboard" className="text-blue-600 font-medium text-sm">Dashboard</Link>
-                <Link href="/courses" className="text-gray-600 hover:text-gray-900 text-sm">My Courses</Link>
-                <Link href="/search" className="text-gray-600 hover:text-gray-900 text-sm">Discover</Link>
-              </nav>
-            </div>
-            <div className="flex items-center gap-2">
-              <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
-                <Bell className="w-5 h-5" />
-              </button>
-              <Link href="/profile" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
-                <User className="w-5 h-5" />
-              </Link>
-              <button className="md:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
-                <Menu className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {upgraded && (
         <div className="bg-blue-600 px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">

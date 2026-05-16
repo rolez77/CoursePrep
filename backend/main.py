@@ -9,6 +9,7 @@ from stripe_routes import router as stripe_router
 import os
 import json
 import stripe
+from datetime import date as date_type
 from supabase import create_client
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -52,7 +53,7 @@ def root():
 
 @app.post("/upload")
 @limiter.limit("5/minute")
-async def upload_file(file: UploadFile = File(...), user_id: str = Form(...), course_id: str = Form(None), document_type: str = Form("other")):
+async def upload_file(request: Request, file: UploadFile = File(...), user_id: str = Form(...), course_id: str = Form(None), document_type: str = Form("other")):
 
     profile = supabase.table("profiles").select("is_pro, upload_count").eq("id", user_id).single().execute()
 
@@ -97,13 +98,39 @@ async def upload_file(file: UploadFile = File(...), user_id: str = Form(...), co
 
 @app.post("/chat")
 @limiter.limit("20/minute")
-async def chat(question: str, user_id: str, course_id: str = None):
+async def chat(request: Request, question: str, user_id: str, course_id: str = None):
+    profile = supabase.table("profiles").select("is_pro, daily_question_count, daily_question_reset").eq("id", user_id).single().execute()
+
+    if profile.data:
+        is_pro = profile.data.get("is_pro", False)
+        if not is_pro:
+            today = str(date_type.today())
+            daily_reset = profile.data.get("daily_question_reset")
+            daily_count = profile.data.get("daily_question_count") or 0
+
+            if daily_reset != today:
+                daily_count = 0
+
+            if daily_count >= 20:
+                raise HTTPException(status_code=403, detail="You've reached your 20 daily question limit. Upgrade to Pro for unlimited questions.")
+
+            supabase.table("profiles").update({
+                "daily_question_count": daily_count + 1,
+                "daily_question_reset": today,
+            }).eq("id", user_id).execute()
+
     response = await answer_question(question, user_id, course_id)
     return {"response": response}
 
 @app.post("/quiz")
 @limiter.limit("5/minute")
-async def quiz_endpoint(topic: str, user_id: str, num_questions: int = 5, course_id: str = None):
+async def quiz_endpoint(request: Request, topic: str, user_id: str, num_questions: int = 5, course_id: str = None):
+    profile = supabase.table("profiles").select("is_pro").eq("id", user_id).single().execute()
+    is_pro = profile.data.get("is_pro", False) if profile.data else False
+
+    if not is_pro and num_questions > 5:
+        raise HTTPException(status_code=403, detail="Free plan limit reached. Upgrade to Pro to generate quizzes with more than 5 questions.")
+
     quiz = await generate_quiz(topic, user_id, num_questions, course_id)
     return {"quiz": quiz}
 

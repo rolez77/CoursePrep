@@ -133,7 +133,7 @@ export default function Profile() {
 
   async function handleSignOut() {
     await supabase.auth.signOut()
-    router.push("/login")
+    router.push("/")
   }
 
   if (loading || !user) return (

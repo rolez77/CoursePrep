@@ -3,21 +3,20 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/app/lib/supabase"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
+import {
+  Brain, Bell, User, Menu,
+} from "lucide-react"
 
-const linkStyle: React.CSSProperties = {
-  fontFamily: "'DM Mono', monospace",
-  fontSize: "11px",
-  color: "#8C8070",
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
-  textDecoration: "none",
-}
 
 export default function Navbar() {
   const [user, setUser] = useState<any>(null)
-  const [isPro, setIsPro] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [isPro, setIsPro] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("is_pro") === "true"
+    return false
+  })
   const supabase = createClient()
+  const pathname = usePathname()
 
   useEffect(() => {
     async function loadUser() {
@@ -29,36 +28,58 @@ export default function Navbar() {
           .select("is_pro")
           .eq("id", user.id)
           .single()
-        if (data?.is_pro) setIsPro(true)
+        const pro = data?.is_pro ?? false
+        setIsPro(pro)
+        localStorage.setItem("is_pro", String(pro))
       }
-      setLoading(false)
     }
     loadUser()
   }, [])
 
   return (
-    <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 48px", borderBottom: "1px solid rgba(26,22,18,0.12)" }}>
-      <Link href={user ? "/dashboard" : "/login"} style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px", fontWeight: 700, color: "#1A1612", textDecoration: "none" }}>
-        Course<span style={{ color: "#C8441A" }}>Prep</span>
-      </Link>
-      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        <Link href="/courses" style={linkStyle}>Courses</Link>
-        <Link href="/search" style={linkStyle}>Search</Link>
-        {!loading && !isPro && (
-          <Link href="/upgrade" style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px", color: "#F5F0E8", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none", background: "#C8441A", padding: "6px 14px", borderRadius: "100px" }}>
-            Upgrade
-          </Link>
-        )}
-        {!loading && (user ? (
-          <Link href="/profile" style={{ ...linkStyle, border: "1px solid rgba(26,22,18,0.12)", padding: "6px 14px", borderRadius: "100px" }}>
-            Profile
-          </Link>
-        ) : (
-          <Link href="/login" style={{ ...linkStyle, color: "#F5F0E8", background: "#1A1612", padding: "8px 16px", borderRadius: "4px" }}>
-            Log in
-          </Link>
-        ))}
-      </div>
-    </nav>
+      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-8">
+              <Link href="/dashboard" className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Brain className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-xl font-bold text-gray-900 dark:text-white">CoursePrep</span>
+              </Link>
+              <nav className="hidden md:flex items-center gap-6">
+                {[
+                  { href: "/dashboard", label: "Dashboard" },
+                  { href: "/courses", label: "My Courses" },
+                  { href: "/search", label: "Discover" },
+                  ...(!isPro ? [{ href: "/upgrade", label: "Upgrade to Pro" }] : []),
+                ].map(({ href, label }) => {
+                  const active = pathname === href || pathname.startsWith(href + "/")
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={`text-sm ${active ? "text-blue-600 dark:text-blue-400 font-medium" : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"}`}
+                    >
+                      {label}
+                    </Link>
+                  )
+                })}
+              </nav>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+                <Bell className="w-5 h-5" />
+              </button>
+              <Link href="/profile" className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+                <User className="w-5 h-5" />
+              </Link>
+              <button className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+                <Menu className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
   )
 }

@@ -36,7 +36,8 @@ export async function middleware(request: NextRequest) {
 
   // Root redirect
   if (request.nextUrl.pathname === "/") {
-    return redirect(user ? "/dashboard" : "/login")
+    if (user) return redirect("/dashboard")
+    return supabaseResponse
   }
 
   // Protect dashboard and courses — redirect to login if not authenticated
