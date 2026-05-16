@@ -47,7 +47,7 @@ function MockChatDemo() {
   }, [visibleMessages, showQuiz])
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden w-full max-w-md mx-auto lg:mx-0">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden w-full max-w-md mx-auto lg:mx-0">
       {/* Course header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-5 py-4">
         <div className="flex items-center gap-3">
@@ -75,7 +75,7 @@ function MockChatDemo() {
               className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                 msg.role === "user"
                   ? "bg-blue-600 text-white rounded-br-sm"
-                  : "bg-gray-100 text-gray-800 rounded-bl-sm"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-sm"
               }`}
             >
               {msg.content}
@@ -85,7 +85,7 @@ function MockChatDemo() {
 
         {visibleMessages > 0 && visibleMessages < DEMO_MESSAGES.length && (
           <div className="flex justify-start animate-in fade-in duration-200">
-            <div className="bg-gray-100 px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1.5">
+            <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:0ms]" />
               <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:150ms]" />
               <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:300ms]" />
@@ -94,12 +94,12 @@ function MockChatDemo() {
         )}
 
         {showQuiz && (
-          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 bg-purple-50 border border-purple-200 rounded-xl p-4">
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-3">
-              <HelpCircle className="w-4 h-4 text-purple-600" />
-              <span className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Quick Quiz</span>
+              <HelpCircle className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <span className="text-xs font-semibold text-purple-700 dark:text-purple-400 uppercase tracking-wide">Quick Quiz</span>
             </div>
-            <p className="text-sm font-medium text-gray-900 mb-3">{QUIZ_QUESTION.question}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">{QUIZ_QUESTION.question}</p>
             <div className="space-y-2">
               {QUIZ_QUESTION.options.map((opt) => (
                 <button
@@ -107,14 +107,14 @@ function MockChatDemo() {
                   onClick={() => setSelected(opt)}
                   className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition-all ${
                     selected === null
-                      ? "border-gray-200 hover:border-purple-400 text-gray-700"
+                      ? "border-gray-200 dark:border-gray-600 hover:border-purple-400 text-gray-700 dark:text-gray-300"
                       : selected === opt && opt === QUIZ_QUESTION.correct
-                      ? "border-green-400 bg-green-50 text-green-800"
+                      ? "border-green-400 bg-green-50 dark:bg-green-950/40 text-green-800 dark:text-green-300"
                       : selected === opt
-                      ? "border-red-300 bg-red-50 text-red-700"
+                      ? "border-red-300 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300"
                       : opt === QUIZ_QUESTION.correct && selected !== null
-                      ? "border-green-300 bg-green-50 text-green-700"
-                      : "border-gray-200 text-gray-500"
+                      ? "border-green-300 bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300"
+                      : "border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400"
                   }`}
                 >
                   {selected !== null && opt === QUIZ_QUESTION.correct && (
@@ -125,7 +125,7 @@ function MockChatDemo() {
               ))}
             </div>
             {selected && (
-              <p className="mt-3 text-xs text-gray-600 animate-in fade-in duration-200">
+              <p className="mt-3 text-xs text-gray-600 dark:text-gray-400 animate-in fade-in duration-200">
                 {selected === QUIZ_QUESTION.correct
                   ? "Correct! SN2 needs a strong nucleophile to attack the electrophilic carbon directly."
                   : `Not quite. Strong nucleophile is correct — it's the key driver for backside attack in SN2.`}
@@ -136,12 +136,12 @@ function MockChatDemo() {
       </div>
 
       {/* Input */}
-      <div className="border-t border-gray-200 flex items-center gap-3 px-4 py-3">
+      <div className="border-t border-gray-200 dark:border-gray-700 flex items-center gap-3 px-4 py-3">
         <input
           readOnly
           value=""
           placeholder="Ask anything about this course..."
-          className="flex-1 text-sm text-gray-500 placeholder-gray-400 outline-none bg-transparent"
+          className="flex-1 text-sm text-gray-500 dark:text-gray-400 placeholder-gray-400 outline-none bg-transparent"
         />
         <button className="p-1.5 text-blue-600">
           <Send className="w-4 h-4" />
